@@ -9,9 +9,10 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.multiclass import OneVsRestClassifier
 
 
-def file_loader(path, duration=4, format='mp3', limit=10):
+def file_loader(path, duration=1, format='mp3', limit=10, csv_export=False):
     '''
     INPUT: Path (str), duration (in s)
     OUTPU: List of raw audio data (array), sampling rate (int)
@@ -23,6 +24,8 @@ def file_loader(path, duration=4, format='mp3', limit=10):
     for song in songdirs[:limit]:
         X, sr = librosa.load(song, duration=duration)
         raw_audio_data.append(X)
+    if csv_export:
+        np.savetxt(path.split('/')[-2]+'.csv', np.array(raw_audio_data), delimiter=',')
     return raw_audio_data, sr
 
 def mfcc_extractor(raw_audio_data, sample_rate=22050):
