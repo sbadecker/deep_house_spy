@@ -1,4 +1,5 @@
 import numpy as np
+import librosa
 import matplotlib.pyplot as plt
 
 def shuffler(X, y):
@@ -17,7 +18,20 @@ def plotter(X):
         ax.plot(X[i])
     plt.show()
 
-def heatmap(X):
+def heatmap(X, y_labels=[], x_labels=[]):
     fig, ax = plt.subplots()
     heatmap = ax.pcolor(X, cmap=plt.cm.Blues, alpha=0.8)
+    if len(x_labels)>0:
+        ax.set_xticklabels(x_labels, minor=False)
+        ax.set_xticks(np.arange(X.shape[1]) + 0.5, minor=False)
+    if len(y_labels)>0:
+        ax.set_yticklabels(y_labels, minor=False)
+        ax.set_yticks(np.arange(X.shape[0]) + 0.5, minor=False)
+    plt.show()
+
+def mfcc_map(X):
+    plt.figure(figsize=(10, 4))
+    librosa.display.specshow(X, x_axis='time')
+    plt.colorbar()
+    plt.tight_layout()
     plt.show()
