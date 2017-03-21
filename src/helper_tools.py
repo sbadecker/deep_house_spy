@@ -20,4 +20,4 @@ def plotter(X):
 def heatmap(X):
     fig, ax = plt.subplots()
     heatmap = ax.pcolor(X, cmap=plt.cm.Blues, alpha=0.8)
-    splt.show()
+    plt.show()
