@@ -2,3 +2,5 @@ data/
 *.zip
 *.mp3
 *.wav
+*.csv
+*.pyc
