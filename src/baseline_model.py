@@ -1,9 +1,11 @@
 import numpy as np
+from helper_tools import shuffler, heatmap
 import pandas as pd
 import glob
 import os
 import librosa
 import librosa.display
+from time import time
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.svm import SVC
@@ -18,6 +20,7 @@ def file_loader(path, duration=4, format='mp3', limit=None, csv_export=False):
     OUTPU: List of raw audio data (array), sampling rate (int)
     Takes in the path to audio files (mp3) and loads them as floating time series.
     '''
+    start = time()
     songdirs = glob.glob(path+'*.'+format)
     raw_audio_data = []
     sr = None
@@ -26,41 +29,49 @@ def file_loader(path, duration=4, format='mp3', limit=None, csv_export=False):
         raw_audio_data.append(X)
     if csv_export:
         np.savetxt(path.split('/')[-2]+'.csv', np.array(raw_audio_data), delimiter=',')
-    return raw_audio_data, sr
+    print 'File loader for one artist done', time()-start
+    return raw_audio_data, sr, songdirs
 
 def mfcc_extractor(raw_audio_data, sample_rate=22050):
     '''
     Takes in raw audio data (time series) and loads the MFCC. It then calculates
     the mean for the respective cepstrals.
     '''
+    start = time()
     mfcc_list = []
     for song in raw_audio_data:
         m_mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate).T,axis=0)
         mfcc_list.append(m_mfcc)
+    print 'MFCC for one artist done', time()-start
     return np.array(mfcc_list)
 
 def feature_extractor(path, duration=5, format='mp3', song_limit=None, artist_limit=None):
     m_mfccs = []
     labels = []
+    song_ids = []
     artists = glob.glob(path+'*/')[:artist_limit]
     for i, subdir in enumerate(artists):
-        raw_audio_data, sr = file_loader(subdir, duration=duration, format=format, limit=song_limit)
+        raw_audio_data, sr, songdirs = file_loader(subdir, duration=duration, format=format, limit=song_limit)
         mfcc_list = mfcc_extractor(raw_audio_data, sample_rate=sr)
         m_mfccs.append(mfcc_list)
         labels.append(np.ones(len(mfcc_list))*i)
+        song_ids.append(songdirs[:song_limit])
     m_mfccs = reduce(lambda x, y: np.append(x, y, axis=0), m_mfccs)
     labels = reduce(lambda x, y: np.append(x, y, axis=0), labels)
-    return m_mfccs, labels
+    song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
+    return m_mfccs, labels, song_ids
 
+def one_artist_feature_extractor(artist_dir, duration=5, format='mp3', song_limit=None, artist_limit=None):
+    raw_audio_data, sr, songdirs = file_loader(artist_dir, duration=duration, format=format, limit=song_limit)
+    m_mfccs = mfcc_extractor(raw_audio_data, sample_rate=sr)
+    song_ids = songdirs[:song_limit]
+    return m_mfccs, labels, song_ids
 
 def multi_cv(X, y):
     '''
     Takes in a 2d array with data from multiple labels and a model and runs
     a K-fold cross validation on it.
     '''
-    # # Determine how many samples per label are present
-    # sf = StratifiedKFold(n_splits=5)
-    # for split in sf.split(X, y):
     result = []
     sf = StratifiedKFold(n_splits=5, shuffle=True)
     for train, test in sf.split(X, y):
@@ -69,22 +80,31 @@ def multi_cv(X, y):
         result.append(classifier.score(X[test], y[test]))
     return result
 
-def shuffler(X, y):
-    shuffler = np.array(range(len(X)))
-    np.random.shuffle(shuffler)
-    X_shuffled = X[shuffler]
-    y_shuffled = y[shuffler]
-    return X_shuffled, y_shuffled
+def prediction_analyser(model, X, y, songids):
+    '''
+    INPUT: model, 2d array, 1d array, list of lists
+    OUTPUT: song_ids with correct predictions and false predictions
+    '''
+    X_train, X_test, y_train, y_test, song_train, song_test = train_test_split(X, y, songids)
+    classifier = model()
+    classifier.fit(X_train, y_train)
+    predictions = classifier.predict(X_test)
+    correct = song_test[predictions==y_test]
+    wrong = song_test[predictions!=y_test]
+    X_correct = X_test[predictions==y_test]
+    X_wrong = X_test[predictions!=y_test]
+    return correct, wrong, X_correct, X_wrong
 
 
 if __name__ == '__main__':
-    X, y = feature_extractor('../data/', song_limit=None, artist_limit=10)
-
+    X, y, song_ids = feature_extractor('../data/', song_limit=50, artist_limit=2)
     # X, y = shuffler(X,y)
 
-    result = multi_cv(X, y)
-    print np.mean(result)
+    correct, wrong, X_correct, X_wrong = prediction_analyser(RandomForestClassifier, X, y, song_ids)
+    # one_artist_feature_extractor('../data/kellerkind/', duration=5, format='mp3', song_limit=10)
 
+    # result = multi_cv(X, y)
+    # print np.mean(result)
 
     # svc_classifier = SVC()
     # print "SVC score: ", cross_val_score(svc_classifier, X, y, cv=5).mean()
