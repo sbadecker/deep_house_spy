@@ -65,6 +65,21 @@ def beatport_downloader(song_ids, directory='./'):
         with open(directory+song+'.mp3', 'wb') as f:
             f.write(song_file.read())
 
+def batch_downloader(artist_list):
+    '''
+    INPUT: list
+    OUT: None
+    Takes in a list of artiest names and ids, and
+    1. Scrapes all of their songs with the track_id_scraper
+    2. Downloads all their songs with the beatport_downloader
+    '''
+    for artist in artist_list:
+        tracks = track_id_scraper(artist[0]+'/'+artist[1])
+        beatport_downloader(tracks, './'+artist[0]+'/')
+
 if __name__ == '__main__':
-    tracks = track_id_scraper('sandrino/100608')
-    beatport_downloader(tracks, './sandrino/')
+    artists = ['rodriguez-jr/14633', 'sascha-funke/6262', 'and-me/61960',
+               'mandingo/21472', 'aero-manyelo/127207', 'eagles-and-butterflies/290967']
+    for artist in artists:
+        tracks = track_id_scraper(artist)
+        beatport_downloader(tracks, './'+artist.split('/')[0]+'/')
