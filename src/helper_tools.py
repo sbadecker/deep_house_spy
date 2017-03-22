@@ -1,6 +1,8 @@
 import numpy as np
+import os
 import librosa
 import matplotlib.pyplot as plt
+from tempfile import TemporaryFile
 
 def shuffler(X, y):
     shuffler = np.array(range(len(X)))
@@ -31,7 +33,21 @@ def heatmap(X, y_labels=[], x_labels=[]):
 
 def mfcc_map(X):
     plt.figure(figsize=(10, 4))
-    librosa.display.specshow(X, x_axis='time')
+    librosa.display.specshow(X, x_axis='artist')
     plt.colorbar()
     plt.tight_layout()
     plt.show()
+
+def csv_exporter(raw_audio_data, path, songdirs, sr):
+    if not os.path.exists('./raw_data/'):
+        os.makedirs('./raw_data/')
+    if not os.path.exists('./meta_info/'):
+        os.makedirs('./meta_info/')
+    # np.savetxt('./raw_data/'+path.split('/')[-2]+'.csv', np.array(raw_audio_data), delimiter=',')
+    # with open('./meta_info/'+path.split('/')[-2]+'-metainfo'+'.csv','w') as f:
+    #     for songdir in songdirs:
+    #         f.write(songdir+'\n')
+    np.save('./raw_data/'+path.split('/')[-2], np.array(raw_audio_data), allow_pickle=True)
+    with open('./meta_info/'+path.split('/')[-2]+'-metainfo'+'.csv','w') as f:
+        for songdir in songdirs:
+            f.write(songdir+'\n')
