@@ -1,5 +1,5 @@
 import numpy as np
-from helper_tools import shuffler, heatmap
+from helper_tools import shuffler, heatmap, csv_exporter
 import pandas as pd
 import glob
 import os
@@ -28,7 +28,7 @@ def file_loader(path, duration=4, format='mp3', limit=None, csv_export=False):
         X, sr = librosa.load(song, duration=duration)
         raw_audio_data.append(X)
     if csv_export:
-        np.savetxt(path.split('/')[-2]+'.csv', np.array(raw_audio_data), delimiter=',')
+        csv_exporter(raw_audio_data, path, songdirs, sr)
     print 'File loader for one artist done', time()-start
     return raw_audio_data, sr, songdirs
 
@@ -61,11 +61,36 @@ def feature_extractor(path, duration=5, format='mp3', song_limit=None, artist_li
     song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
     return m_mfccs, labels, song_ids
 
+def csv_feature_extractor(path, duration=5, song_limit=None):
+    '''
+    Takes in a directory with csv files created by the file_loader and extracts the features.
+    '''
+    m_mfccs = []
+    labels = []
+    song_ids = []
+    raw_artistfiles = glob.glob(path+'/raw_data/'+'*.npy')
+    meta_artistfiles = glob.glob(path+'/meta_info/'+'*.csv')
+    for i, raw_file in enumerate(raw_artistfiles):
+        start = time()
+        raw_audio_data = np.load(raw_file)
+        mfcc_list = mfcc_extractor(raw_audio_data[:song_limit])
+        m_mfccs.append(mfcc_list)
+        labels.append(np.ones(len(mfcc_list))*i)
+        print 'Convertion of audio done for one artist', time()-start
+    for meta_file in meta_artistfiles:
+        songdirs = np.loadtxt(meta_file, dtype=str)
+        song_ids.append(songdirs[:song_limit])
+    m_mfccs = reduce(lambda x, y: np.append(x, y, axis=0), m_mfccs)
+    labels = reduce(lambda x, y: np.append(x, y, axis=0), labels)
+    song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
+    return m_mfccs, labels, song_ids
+
+
 def one_artist_feature_extractor(artist_dir, duration=5, format='mp3', song_limit=None, artist_limit=None):
     raw_audio_data, sr, songdirs = file_loader(artist_dir, duration=duration, format=format, limit=song_limit)
     m_mfccs = mfcc_extractor(raw_audio_data, sample_rate=sr)
     song_ids = songdirs[:song_limit]
-    return m_mfccs, labels, song_ids
+    return m_mfccs, song_ids
 
 def multi_cv(X, y):
     '''
@@ -97,20 +122,27 @@ def prediction_analyser(model, X, y, songids):
 
 
 if __name__ == '__main__':
-    X, y, song_ids = feature_extractor('../data/', song_limit=50, artist_limit=2)
+    # X, y, song_ids = feature_extractor('../data/', song_limit=50, artist_limit=2)
     # X, y = shuffler(X,y)
 
-    correct, wrong, X_correct, X_wrong = prediction_analyser(RandomForestClassifier, X, y, song_ids)
-    # one_artist_feature_extractor('../data/kellerkind/', duration=5, format='mp3', song_limit=10)
+    X, y, song_ids = csv_feature_extractor('./', song_limit=10)
+    X, y = shuffler(X,y)
+
+
+    # correct, wrong, X_correct, X_wrong = prediction_analyser(RandomForestClassifier, X, y, song_ids)
+    # heatmap(X_wrong, y_labels=wrong)
+
 
     # result = multi_cv(X, y)
     # print np.mean(result)
+
+
+    rndmf_classifier = RandomForestClassifier()
+    print "Random forest score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
+
 
     # svc_classifier = SVC()
     # print "SVC score: ", cross_val_score(svc_classifier, X, y, cv=5).mean()
 
     # logr_classifier = LogisticRegression()
     # print cross_val_score(logr_classifier, X, y, cv=5).mean()
-
-    # rndmf_classifier = RandomForestClassifier()
-    # print "Random forest score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
