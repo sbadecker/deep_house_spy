@@ -15,7 +15,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 
-def file_loader(path, format='mp3', duration=5, limit=None, csv_export=False):
+def file_loader(path, format='mp3', duration=5, song_limit=None, csv_export=False):
     '''
     INPUT: Path (str), duration (in s)
     OUTPU: List of raw audio data (array), sampling rate (int)
@@ -25,7 +25,7 @@ def file_loader(path, format='mp3', duration=5, limit=None, csv_export=False):
     songdirs = glob.glob(path+'*.'+format)
     raw_audio_data = []
     sr = None
-    for song in songdirs[:limit]:
+    for song in songdirs[:song_limit]:
         X, sr = librosa.load(song, duration=duration)
         raw_audio_data.append(X)
     if csv_export:
@@ -42,8 +42,8 @@ def feature_extractor(raw_audio_data, sample_rate=22050):
     feature_list = []
     for song in raw_audio_data:
         # stft = np.abs(librosa.stft(song))
-        # mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate).T,axis=0)
-        bpm = librosa.beat.tempo(song)
+        mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate).T,axis=0)
+        # bpm = librosa.beat.tempo(song)
         # chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
         # mel = np.mean(librosa.feature.melspectrogram(song, sr=sample_rate).T,axis=0)
         # contrast = np.mean(librosa.feature.spectral_contrast(S=song, sr=sample_rate).T,axis=0)
@@ -51,7 +51,7 @@ def feature_extractor(raw_audio_data, sample_rate=22050):
         # tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(song), sr=sample_rate).T,axis=0)
         # features = reduce(lambda x, y: np.append(x, y, axis=0), [mfcc, chroma, mel, contrast, tonnetz])
         # features = reduce(lambda x, y: np.append(x, y, axis=0), [mfcc, bpm])
-        feature_list.append(bpm)
+        feature_list.append(mfcc)
     print 'Feature extraction for one artist done', time()-start
     return np.array(feature_list)
 
@@ -130,20 +130,28 @@ def prediction_analyser(model, X, y, songids):
     X_wrong = X_test[predictions!=y_test]
     return correct, wrong, X_correct, X_wrong
 
+def batch_artist_loader(path):
+    '''
+    INPUT: path (str)
+    OUTPUT: Pickle (raw audio data) and csv files (songdirs)
+    Loads the data for all artistfolders in the path into raw audio data arrays
+    and exports them as pickle files.
+    '''
+    for artist in glob.glob(path+'*/'):
+        file_loader(artist, duration=None, song_limit=None, csv_export=True)
 
 if __name__ == '__main__':
-    X, y, song_ids = batch_extractor('../data/', song_limit=100, artist_limit=2, duration=10)
-    X, y = shuffler(X,y)
-
-    # X, y, song_ids = csv_batch_extractor('./', song_limit=100, artist_limit=5)
+    # X, y, song_ids = csv_batch_extractor('./', song_limit=None, artist_limit=10)
     # X, y = shuffler(X,y)
 
     # correct, wrong, X_correct, X_wrong = prediction_analyser(RandomForestClassifier, X, y, song_ids)
     # heatmap(X_wrong, y_labels=wrong)
 
+    # for artist in glob.glob('../data/*/'):
+    #     file_loader(artist, duration=None, song_limit=None, csv_export=True)
 
-    result = multi_cv(X, y)
-    print np.mean(result)
+    # result = multi_cv(X, y)
+    # print np.mean(result)
 
 
     # rndmf_classifier = RandomForestClassifier()
@@ -152,6 +160,6 @@ if __name__ == '__main__':
     #
     # svc_classifier = SVC()
     # print "SVC score: ", cross_val_score(svc_classifier, X, y, cv=5).mean()
-
+    #
     # logr_classifier = LogisticRegression()
     # print cross_val_score(logr_classifier, X, y, cv=5).mean()
