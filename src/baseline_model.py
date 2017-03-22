@@ -10,11 +10,12 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.multiclass import OneVsRestClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 
-def file_loader(path, duration=4, format='mp3', limit=None, csv_export=False):
+def file_loader(path, format='mp3', duration=5, limit=None, csv_export=False):
     '''
     INPUT: Path (str), duration (in s)
     OUTPU: List of raw audio data (array), sampling rate (int)
@@ -32,58 +33,67 @@ def file_loader(path, duration=4, format='mp3', limit=None, csv_export=False):
     print 'File loader for one artist done', time()-start
     return raw_audio_data, sr, songdirs
 
-def mfcc_extractor(raw_audio_data, sample_rate=22050):
+def feature_extractor(raw_audio_data, sample_rate=22050):
     '''
     Takes in raw audio data (time series) and loads the MFCC. It then calculates
     the mean for the respective cepstrals.
     '''
     start = time()
-    mfcc_list = []
+    feature_list = []
     for song in raw_audio_data:
-        m_mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate).T,axis=0)
-        mfcc_list.append(m_mfcc)
-    print 'MFCC for one artist done', time()-start
-    return np.array(mfcc_list)
+        # stft = np.abs(librosa.stft(song))
+        # mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate).T,axis=0)
+        bpm = librosa.beat.tempo(song)
+        # chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
+        # mel = np.mean(librosa.feature.melspectrogram(song, sr=sample_rate).T,axis=0)
+        # contrast = np.mean(librosa.feature.spectral_contrast(S=song, sr=sample_rate).T,axis=0)
+        # contrast = np.mean(librosa.feature.spectral_contrast(song, sr=sample_rate),axis=1)
+        # tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(song), sr=sample_rate).T,axis=0)
+        # features = reduce(lambda x, y: np.append(x, y, axis=0), [mfcc, chroma, mel, contrast, tonnetz])
+        # features = reduce(lambda x, y: np.append(x, y, axis=0), [mfcc, bpm])
+        feature_list.append(bpm)
+    print 'Feature extraction for one artist done', time()-start
+    return np.array(feature_list)
 
-def feature_extractor(path, duration=5, format='mp3', song_limit=None, artist_limit=None):
-    m_mfccs = []
+def batch_extractor(path, duration=5, format='mp3', song_limit=None, artist_limit=None):
+    feature_list = []
     labels = []
     song_ids = []
     artists = glob.glob(path+'*/')[:artist_limit]
     for i, subdir in enumerate(artists):
         raw_audio_data, sr, songdirs = file_loader(subdir, duration=duration, format=format, limit=song_limit)
-        mfcc_list = mfcc_extractor(raw_audio_data, sample_rate=sr)
-        m_mfccs.append(mfcc_list)
-        labels.append(np.ones(len(mfcc_list))*i)
+        features = feature_extractor(raw_audio_data[:song_limit])
+        feature_list.append(features)
+        labels.append(np.ones(len(features))*i)
         song_ids.append(songdirs[:song_limit])
-    m_mfccs = reduce(lambda x, y: np.append(x, y, axis=0), m_mfccs)
+    feature_list = reduce(lambda x, y: np.append(x, y, axis=0), feature_list)
     labels = reduce(lambda x, y: np.append(x, y, axis=0), labels)
     song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
-    return m_mfccs, labels, song_ids
+    return feature_list, labels, song_ids
 
-def csv_feature_extractor(path, duration=5, song_limit=None):
+def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None):
     '''
     Takes in a directory with csv files created by the file_loader and extracts the features.
     '''
-    m_mfccs = []
+    feature_list = []
     labels = []
     song_ids = []
     raw_artistfiles = glob.glob(path+'/raw_data/'+'*.npy')
     meta_artistfiles = glob.glob(path+'/meta_info/'+'*.csv')
-    for i, raw_file in enumerate(raw_artistfiles):
+    for i, raw_file in enumerate(raw_artistfiles[:artist_limit]):
         start = time()
         raw_audio_data = np.load(raw_file)
-        mfcc_list = mfcc_extractor(raw_audio_data[:song_limit])
-        m_mfccs.append(mfcc_list)
-        labels.append(np.ones(len(mfcc_list))*i)
-        print 'Convertion of audio done for one artist', time()-start
-    for meta_file in meta_artistfiles:
+        print 'Data loading for artist number %i done' %i, time()-start
+        features = feature_extractor(raw_audio_data[:song_limit])
+        feature_list.append(features)
+        labels.append(np.ones(len(features))*i)
+    for meta_file in meta_artistfiles[:artist_limit]:
         songdirs = np.loadtxt(meta_file, dtype=str)
         song_ids.append(songdirs[:song_limit])
-    m_mfccs = reduce(lambda x, y: np.append(x, y, axis=0), m_mfccs)
+    feature_list = reduce(lambda x, y: np.append(x, y, axis=0), feature_list)
     labels = reduce(lambda x, y: np.append(x, y, axis=0), labels)
     song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
-    return m_mfccs, labels, song_ids
+    return feature_list, labels, song_ids
 
 
 def one_artist_feature_extractor(artist_dir, duration=5, format='mp3', song_limit=None, artist_limit=None):
@@ -122,25 +132,24 @@ def prediction_analyser(model, X, y, songids):
 
 
 if __name__ == '__main__':
-    # X, y, song_ids = feature_extractor('../data/', song_limit=50, artist_limit=2)
-    # X, y = shuffler(X,y)
-
-    X, y, song_ids = csv_feature_extractor('./', song_limit=10)
+    X, y, song_ids = batch_extractor('../data/', song_limit=100, artist_limit=2, duration=10)
     X, y = shuffler(X,y)
 
+    # X, y, song_ids = csv_batch_extractor('./', song_limit=100, artist_limit=5)
+    # X, y = shuffler(X,y)
 
     # correct, wrong, X_correct, X_wrong = prediction_analyser(RandomForestClassifier, X, y, song_ids)
     # heatmap(X_wrong, y_labels=wrong)
 
 
-    # result = multi_cv(X, y)
-    # print np.mean(result)
+    result = multi_cv(X, y)
+    print np.mean(result)
 
 
-    rndmf_classifier = RandomForestClassifier()
-    print "Random forest score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
-
-
+    # rndmf_classifier = RandomForestClassifier()
+    # print "Random forest score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
+    #
+    #
     # svc_classifier = SVC()
     # print "SVC score: ", cross_val_score(svc_classifier, X, y, cv=5).mean()
 
