@@ -21,7 +21,7 @@ from functools import partial
 ############# File loader ###############
 #########################################
 
-def file_loader(path, format='mp3', duration=5, song_limit=None, csv_export=False):
+def file_loader(path, format='mp3', duration=5, offset=None, song_limit=None, csv_export=False):
     '''
     INPUT: Path (str), duration (in s)
     OUTPUT: List of raw audio data (array), sampling rate (int)
@@ -34,14 +34,14 @@ def file_loader(path, format='mp3', duration=5, song_limit=None, csv_export=Fals
     raw_audio_data = []
     sr = None
     for song in songdirs[:song_limit]:
-        X, sr = librosa.load(song, duration=duration)
+        X, sr = librosa.load(song, duration=duration, offset=offset)
         raw_audio_data.append(X)
     if csv_export:
-        csv_exporter(raw_audio_data, path, songdirs, sr)
+        csv_exporter(raw_audio_data, path, songdirs)
     print 'File loader for one artist done', time()-start
     return raw_audio_data, sr, songdirs
 
-def parallel_file_loader(path, format='mp3', duration=None, song_limit=None, csv_export=True, pool_size=4):
+def parallel_file_loader(path, format='mp3', duration=None, offset=None, song_limit=None, csv_export=True, pool_size=4):
     '''
     Takes in the path to audio files (mp3) and loads them as floating time series.
     When csv_export is enabled it calls the csv_exporter which stores the
@@ -53,15 +53,14 @@ def parallel_file_loader(path, format='mp3', duration=None, song_limit=None, csv
     raw_audio_data = []
     songdirs = glob.glob(path+'*.'+format)[:song_limit]
     pool = multiprocessing.Pool(processes=pool_size)
-    X = pool.map(partial(librosa.load, duration=duration), songdirs)
+    X = pool.map(partial(librosa.load, duration=duration, offset=offset), songdirs)
     sr = X[0][1]
     print "Audio transformation done", time()-start
     for song in X:
-        raw_audio_data.append(X[0])
+        raw_audio_data.append(song[0])
     if csv_export:
-        csv_exporter(raw_audio_data, path, songdirs, sr)
-        return None
-    return raw_audio_data, songdirs
+        csv_exporter(raw_audio_data, path, songdirs)
+    return raw_audio_data, sr, songdirs
 
 #########################################
 ########### Feature extractor ###########
@@ -88,6 +87,11 @@ def feature_extractor(raw_audio_data, n_mfcc=20, sample_rate=22050, mfcc_limit=N
         feature_list.append(mfcc)
     # print 'Feature extraction for one artist done', time()-start
     return np.array(feature_list)
+
+
+#########################################
+####### File processing scripts  ########
+#########################################
 
 def batch_extractor(path, duration=5, format='mp3', song_limit=None, artist_limit=None, n_mfcc=20):
     feature_list = []
@@ -137,6 +141,9 @@ def one_artist_feature_extractor(artist_dir, duration=5, format='mp3', song_limi
     return m_mfccs, song_ids
 
 
+#########################################
+############ Analysis tools #############
+#########################################
 
 def multi_cv(X, y, model= OneVsRestClassifier(RandomForestClassifier(random_state=0))):
     '''
@@ -181,16 +188,14 @@ if __name__ == '__main__':
     # X, y, song_ids = batch_extractor('../data/songs', song_limit=100, artist_limit=2)
     # X, y = shuffler(X,y)
 
-    X, y, song_ids = csv_batch_extractor('../data/pickles/4_seconds/', song_limit=100, artist_limit=2, n_mfcc=5)
+    # X, y, song_ids = csv_batch_extractor('../data/pickles/full_songs/', song_limit=100, artist_limit=2, n_mfcc=20)
     # X, y = shuffler(X,y)
 
-    # for artist in glob.glob('../data/*/'):
-    #     start = time()
-    #     raw_audio_data = parallel_file_loader(artist, format='mp3', duration=None, song_limit=None, csv_export=True, pool_size=8)
-    #     print '{} done in {}s'.format(artist,time()-start)
 
-
-
+    for artist in glob.glob('../data/songs/*/'):
+        start = time()
+        raw_audio_data = parallel_file_loader(artist, format='mp3', duration=5, offset=60.0, song_limit=None, csv_export=True, pool_size=8)
+        print '{} done in {}s'.format(artist,time()-start)
 
     # result = multi_cv(X, y)
     # print np.mean(result)
