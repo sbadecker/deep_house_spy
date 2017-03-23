@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import librosa
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from tempfile import TemporaryFile
 
 def shuffler(X, y):
@@ -38,7 +38,7 @@ def mfcc_map(X):
     plt.tight_layout()
     plt.show()
 
-def csv_exporter(raw_audio_data, path, songdirs, sr):
+def csv_exporter(raw_audio_data, path, songdirs):
     if not os.path.exists('./raw_data/'):
         os.makedirs('./raw_data/')
     if not os.path.exists('./meta_info/'):
