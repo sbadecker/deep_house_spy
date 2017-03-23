@@ -4,22 +4,28 @@ import pandas as pd
 import glob
 import os
 import librosa
-import librosa.display
+# import librosa.display
 from time import time
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+import multiprocessing
+from functools import partial
+
 
 
 def file_loader(path, format='mp3', duration=5, song_limit=None, csv_export=False):
     '''
     INPUT: Path (str), duration (in s)
-    OUTPU: List of raw audio data (array), sampling rate (int)
+    OUTPUT: List of raw audio data (array), sampling rate (int)
     Takes in the path to audio files (mp3) and loads them as floating time series.
+    When csv_export is enabled it calls the csv_exporter which stores the
+    audio and meta data as pickle and csv files.
     '''
     start = time()
     songdirs = glob.glob(path+'*.'+format)
@@ -33,7 +39,29 @@ def file_loader(path, format='mp3', duration=5, song_limit=None, csv_export=Fals
     print 'File loader for one artist done', time()-start
     return raw_audio_data, sr, songdirs
 
-def feature_extractor(raw_audio_data, sample_rate=22050):
+def parallel_file_loader(path, format='mp3', duration=None, song_limit=None, csv_export=True, pool_size=4):
+    '''
+    Takes in the path to audio files (mp3) and loads them as floating time series.
+    When csv_export is enabled it calls the csv_exporter which stores the
+    audio and meta data as pickle and csv files.
+
+    Can run use multiple cores (specified by pool_size).
+    '''
+    start = time()
+    raw_audio_data = []
+    songdirs = glob.glob(path+'*.'+format)[:song_limit]
+    pool = multiprocessing.Pool(processes=pool_size)
+    X = pool.map(partial(librosa.load, duration=duration), songdirs)
+    sr = X[0][1]
+    print "Audio transformation done", time()-start
+    for song in X:
+        raw_audio_data.append(X[0])
+    if csv_export:
+        csv_exporter(raw_audio_data, path, songdirs, sr)
+        return None
+    return raw_audio_data, songdirs
+
+def feature_extractor(raw_audio_data, n_mfcc=20, sample_rate=22050, mfcc_limit=None):
     '''
     Takes in raw audio data (time series) and loads the MFCC. It then calculates
     the mean for the respective cepstrals.
@@ -42,7 +70,7 @@ def feature_extractor(raw_audio_data, sample_rate=22050):
     feature_list = []
     for song in raw_audio_data:
         # stft = np.abs(librosa.stft(song))
-        mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate).T,axis=0)
+        mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate, n_mfcc=n_mfcc).T[:mfcc_limit],axis=0)
         # bpm = librosa.beat.tempo(song)
         # chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
         # mel = np.mean(librosa.feature.melspectrogram(song, sr=sample_rate).T,axis=0)
@@ -52,17 +80,17 @@ def feature_extractor(raw_audio_data, sample_rate=22050):
         # features = reduce(lambda x, y: np.append(x, y, axis=0), [mfcc, chroma, mel, contrast, tonnetz])
         # features = reduce(lambda x, y: np.append(x, y, axis=0), [mfcc, bpm])
         feature_list.append(mfcc)
-    print 'Feature extraction for one artist done', time()-start
+    # print 'Feature extraction for one artist done', time()-start
     return np.array(feature_list)
 
-def batch_extractor(path, duration=5, format='mp3', song_limit=None, artist_limit=None):
+def batch_extractor(path, duration=5, format='mp3', song_limit=None, artist_limit=None, n_mfcc=20):
     feature_list = []
     labels = []
     song_ids = []
     artists = glob.glob(path+'*/')[:artist_limit]
     for i, subdir in enumerate(artists):
         raw_audio_data, sr, songdirs = file_loader(subdir, duration=duration, format=format, limit=song_limit)
-        features = feature_extractor(raw_audio_data[:song_limit])
+        features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfccs, mfcc_limit=None)
         feature_list.append(features)
         labels.append(np.ones(len(features))*i)
         song_ids.append(songdirs[:song_limit])
@@ -71,7 +99,7 @@ def batch_extractor(path, duration=5, format='mp3', song_limit=None, artist_limi
     song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
     return feature_list, labels, song_ids
 
-def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None):
+def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_mfcc=20, mfcc_limit=None):
     '''
     Takes in a directory with csv files created by the file_loader and extracts the features.
     '''
@@ -83,8 +111,8 @@ def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None):
     for i, raw_file in enumerate(raw_artistfiles[:artist_limit]):
         start = time()
         raw_audio_data = np.load(raw_file)
-        print 'Data loading for artist number %i done' %i, time()-start
-        features = feature_extractor(raw_audio_data[:song_limit])
+        # print 'Data loading for artist number %i done' %i, time()-start
+        features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfcc, mfcc_limit=mfcc_limit)
         feature_list.append(features)
         labels.append(np.ones(len(features))*i)
     for meta_file in meta_artistfiles[:artist_limit]:
@@ -102,7 +130,7 @@ def one_artist_feature_extractor(artist_dir, duration=5, format='mp3', song_limi
     song_ids = songdirs[:song_limit]
     return m_mfccs, song_ids
 
-def multi_cv(X, y):
+def multi_cv(X, y, model= OneVsRestClassifier(RandomForestClassifier(random_state=0))):
     '''
     Takes in a 2d array with data from multiple labels and a model and runs
     a K-fold cross validation on it.
@@ -110,9 +138,8 @@ def multi_cv(X, y):
     result = []
     sf = StratifiedKFold(n_splits=5, shuffle=True)
     for train, test in sf.split(X, y):
-        classifier = OneVsRestClassifier(RandomForestClassifier(random_state=0))
-        classifier.fit(X[train], y[train])
-        result.append(classifier.score(X[test], y[test]))
+        model.fit(X[train], y[train])
+        result.append(model.score(X[test], y[test]))
     return result
 
 def prediction_analyser(model, X, y, songids):
@@ -140,15 +167,22 @@ def batch_artist_loader(path):
     for artist in glob.glob(path+'*/'):
         file_loader(artist, duration=None, song_limit=None, csv_export=True)
 
+
+
 if __name__ == '__main__':
-    # X, y, song_ids = csv_batch_extractor('./', song_limit=None, artist_limit=10)
+    # X, y, song_ids = batch_extractor('../data/songs', song_limit=100, artist_limit=2)
     # X, y = shuffler(X,y)
 
-    # correct, wrong, X_correct, X_wrong = prediction_analyser(RandomForestClassifier, X, y, song_ids)
-    # heatmap(X_wrong, y_labels=wrong)
+    X, y, song_ids = csv_batch_extractor('../data/pickles/4_seconds/', song_limit=100, artist_limit=2, n_mfcc=5)
+    # X, y = shuffler(X,y)
 
     # for artist in glob.glob('../data/*/'):
-    #     file_loader(artist, duration=None, song_limit=None, csv_export=True)
+    #     start = time()
+    #     raw_audio_data = parallel_file_loader(artist, format='mp3', duration=None, song_limit=None, csv_export=True, pool_size=8)
+    #     print '{} done in {}s'.format(artist,time()-start)
+
+
+
 
     # result = multi_cv(X, y)
     # print np.mean(result)
@@ -157,9 +191,11 @@ if __name__ == '__main__':
     # rndmf_classifier = RandomForestClassifier()
     # print "Random forest score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
     #
-    #
+    # knn_classifier = KNeighborsClassifier()
+    # print "KNN score: ", cross_val_score(knn_classifier, X, y, cv=5).mean()
+
     # svc_classifier = SVC()
     # print "SVC score: ", cross_val_score(svc_classifier, X, y, cv=5).mean()
-    #
+
     # logr_classifier = LogisticRegression()
     # print cross_val_score(logr_classifier, X, y, cv=5).mean()
