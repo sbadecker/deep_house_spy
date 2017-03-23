@@ -21,7 +21,7 @@ from functools import partial
 ############# File loader ###############
 #########################################
 
-def file_loader(path, format='mp3', duration=5, offset=None, song_limit=None, csv_export=False):
+def file_loader(path, format='mp3', duration=5, offset=0.0, song_limit=None, csv_export=False):
     '''
     INPUT: Path (str), duration (in s)
     OUTPUT: List of raw audio data (array), sampling rate (int)
@@ -41,7 +41,7 @@ def file_loader(path, format='mp3', duration=5, offset=None, song_limit=None, cs
     print 'File loader for one artist done', time()-start
     return raw_audio_data, sr, songdirs
 
-def parallel_file_loader(path, format='mp3', duration=None, offset=None, song_limit=None, csv_export=True, pool_size=4):
+def parallel_file_loader(path, format='mp3', duration=None, offset=0.0, song_limit=None, csv_export=True, pool_size=4):
     '''
     Takes in the path to audio files (mp3) and loads them as floating time series.
     When csv_export is enabled it calls the csv_exporter which stores the
@@ -194,7 +194,7 @@ if __name__ == '__main__':
 
     for artist in glob.glob('../data/songs/*/'):
         start = time()
-        raw_audio_data = parallel_file_loader(artist, format='mp3', duration=5, offset=60.0, song_limit=None, csv_export=True, pool_size=8)
+        raw_audio_data = parallel_file_loader(artist, format='mp3', duration=5, offset=0.0, song_limit=None, csv_export=True, pool_size=7)
         print '{} done in {}s'.format(artist,time()-start)
 
     # result = multi_cv(X, y)
