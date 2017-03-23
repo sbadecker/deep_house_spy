@@ -43,10 +43,6 @@ def csv_exporter(raw_audio_data, path, songdirs, sr):
         os.makedirs('./raw_data/')
     if not os.path.exists('./meta_info/'):
         os.makedirs('./meta_info/')
-    # np.savetxt('./raw_data/'+path.split('/')[-2]+'.csv', np.array(raw_audio_data), delimiter=',')
-    # with open('./meta_info/'+path.split('/')[-2]+'-metainfo'+'.csv','w') as f:
-    #     for songdir in songdirs:
-    #         f.write(songdir+'\n')
     np.save('./raw_data/'+path.split('/')[-2], np.array(raw_audio_data), allow_pickle=True)
     with open('./meta_info/'+path.split('/')[-2]+'-metainfo'+'.csv','w') as f:
         for songdir in songdirs:

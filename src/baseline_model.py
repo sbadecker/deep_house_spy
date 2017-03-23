@@ -17,7 +17,9 @@ from sklearn.neighbors import KNeighborsClassifier
 import multiprocessing
 from functools import partial
 
-
+#########################################
+############# File loader ###############
+#########################################
 
 def file_loader(path, format='mp3', duration=5, song_limit=None, csv_export=False):
     '''
@@ -60,6 +62,10 @@ def parallel_file_loader(path, format='mp3', duration=None, song_limit=None, csv
         csv_exporter(raw_audio_data, path, songdirs, sr)
         return None
     return raw_audio_data, songdirs
+
+#########################################
+########### Feature extractor ###########
+#########################################
 
 def feature_extractor(raw_audio_data, n_mfcc=20, sample_rate=22050, mfcc_limit=None):
     '''
@@ -129,6 +135,8 @@ def one_artist_feature_extractor(artist_dir, duration=5, format='mp3', song_limi
     m_mfccs = mfcc_extractor(raw_audio_data, sample_rate=sr)
     song_ids = songdirs[:song_limit]
     return m_mfccs, song_ids
+
+
 
 def multi_cv(X, y, model= OneVsRestClassifier(RandomForestClassifier(random_state=0))):
     '''
