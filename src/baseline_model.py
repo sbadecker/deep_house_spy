@@ -118,7 +118,7 @@ def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_
     song_ids = []
     raw_artistfiles = sorted(glob.glob(path+'/raw_data/'+'*.npy'))
     meta_artistfiles = sorted(glob.glob(path+'/meta_info/'+'*.csv'))
-    for i, raw_file in enumerate(raw_artistfiles[:artist_limit]):
+    for i, raw_file in enumerate(raw_artistfiles):
         start = time()
         raw_audio_data = np.load(raw_file)
         # print 'Data loading for artist number %i done' %i, time()-start
@@ -197,9 +197,9 @@ if __name__ == '__main__':
     # X, y = shuffler(X,y)
 
 
-    for artist in glob.glob('../data/songs/*/')[-3:]:
+    for artist in glob.glob('../data/songs/*/'):
         start = time()
-        raw_audio_data = parallel_file_loader(artist, format='mp3', duration=None, offset=0.0, song_limit=None, csv_export=True, pool_size=7)
+        raw_audio_data = parallel_file_loader(artist, format='mp3', duration=5, offset=0.0, song_limit=None, csv_export=True, pool_size=7)
         print '{} done in {}s'.format(artist,time()-start)
 
     # result = multi_cv(X, y)
