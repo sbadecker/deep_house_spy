@@ -17,13 +17,14 @@ from functools import partial
 ############# Main engine ###############
 #########################################
 
-def main_engine(path, splits=1, song_limit=None, artist_limit=None):
+def main_engine(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8):
     '''
     INPUT: Directory of Artist directories with pickles in them
     OUTPUT: X, y, song_ids
     Loads in all songs from artists in the specified path, and handles the
     splitting, feature extraction and snippet selection process.
     '''
+    start = time()
     X = []
     y = []
     song_ids = []
@@ -38,7 +39,7 @@ def main_engine(path, splits=1, song_limit=None, artist_limit=None):
             song_ids_song = []
             snippets = np.split(song[song.shape[0]%splits:], splits)
             for snippet in snippets:
-                snippet_features_raw = snippet_feature_extractor(snippet)
+                snippet_features_raw = snippet_feature_extractor(snippet, n_mfcc=n_mfcc)
                 X_song.append(snippet_features_raw)
                 y_song.append(i)
                 song_ids_song.append(songdirs[j])
@@ -48,46 +49,56 @@ def main_engine(path, splits=1, song_limit=None, artist_limit=None):
             song_ids.append(song_ids_song[:len(X_song)])
             if j != 0 and (j+1) % 10 == 0:
                 print 'Artist %d, %d songs done' % (i, j+1)
+    print 'Total runtime: ', time()-start
     return np.array(X), np.array(y), np.array(song_ids)
-
-
 
 
 #########################################
 ############# Parallelized ##############
 #########################################
 
-def main_engine_parallelized(raw_artistfiles, splits=1, song_limit=None):
-    '''
-    INPUT: Directory of Artist directories with pickles in them
-    OUTPUT: X, y, song_ids
-    Loads in all songs from artists in the specified path, and handles the
-    splitting, feature extraction and snippet selection process.
-    '''
+def main_engine_parallel(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8, pool_size=8):
+    start = time()
     X = []
     y = []
-    for i, raw_artist in enumerate(raw_artistfiles):
-        raw_audio_data = np.load(raw_artist)[:song_limit]
-        for j, song in enumerate(raw_audio_data):
-            X_song = []
-            y_song = []
-            snippets = np.split(song[song.shape[0]%splits:], splits)
-            for snippet in snippets:
-                snippet_features_raw = snippet_feature_extractor(snippet)
-                X_song.append(snippet_features_raw)
-                y_song.append(i)
-            X_song = snippet_selector(X_song)
-            X.append(X_song)
-            y.append(y_song[:len(X_song)])
-            if j != 0 and (j+1) % 10 == 0:
-                print 'Artist %d, %d songs done' % (i, j+1)
-    return np.array(X), np.array(y)
-
-def main_parallelized(path, splits=1, song_limit=None, artist_limit=None, pool_size=8):
+    song_ids = []
     raw_artistfiles = sorted(glob.glob(path+'raw_data/'+'*.npy'))[:artist_limit]
-    pool = multiprocessing.Pool(processes=pool_size)
-    X = pool.map(partial(main_engine_parallelized, splits=splits, song_limit=song_limit), raw_artistfiles)
-    return X
+    meta_artistfiles = sorted(glob.glob(path+'meta_info/'+'*.csv'))[:artist_limit]
+    for i, raw_artist in enumerate(raw_artistfiles):
+        X_artist = []
+        y_artist = []
+        raw_audio_data = np.load(raw_artist)[:song_limit]
+        songdirs = np.loadtxt(meta_artistfiles[i], dtype=str)[:song_limit]
+        pool = multiprocessing.Pool(processes=pool_size)
+        data_artist = pool.map(partial(parallel_child, i=i, splits=splits, n_mfcc=n_mfcc), raw_audio_data)
+        for song in data_artist:
+            X_artist.append(song[0])
+            y_artist.append(song[1])
+        X.append(np.array(X_artist))
+        y.append(np.array(y_artist))
+        print 'Artist %d done' % (i+1)
+    X = reduce(lambda x,y: np.append(x,y, axis=0), X)
+    y = reduce(lambda x,y: np.append(x,y, axis=0), y)
+    pool.close()
+    pool.join()
+    print 'Total runtime: ', time()-start
+    return X, y
+
+def parallel_child(song, i, n_mfcc, splits=1):
+    X_song = []
+    y_song = []
+    # song_ids_song = []
+    snippets = np.split(song[song.shape[0]%splits:], splits)
+    for snippet in snippets:
+        snippet_features_raw = snippet_feature_extractor(snippet, n_mfcc=n_mfcc)
+        X_song.append(snippet_features_raw)
+        # y_song.append(i)
+        # song_ids_song.append(songdirs[j])
+    X_song = snippet_selector(X_song)
+    y_song = np.ones(len(X_song)) * i
+    # song_ids.append(song_ids_song[:len(X_song)])
+    return np.array(X_song), y_song
+
 
 #########################################
 ########### Snippet handlers ############
@@ -107,22 +118,20 @@ def snippet_selector(snippet_features_raw):
     INPUT:
     OUTPUT:
     '''
-    model = KMeans(n_clusters=50)
-    model.fit(snippet_features_raw)
-    return model.cluster_centers_
+    # model = KMeans(n_clusters=30)
+    # model.fit(snippet_features_raw)
+    # return model.cluster_centers_
+    return snippet_features_raw
 
 
 #########################################
 ############ Analysis tools #############
 #########################################
 
-def snippet_cv(path_full, path_single, splits=1, song_limit=50, artist_limit=2, model=RandomForestClassifier()):
-    '''
-    Takes in The
-    '''
+def snippet_cv(path_full, path_single, splits=1, song_limit=50, artist_limit=2, n_mfcc=8, model=RandomForestClassifier()):
     result = []
-    X_full, y_full, song_ids_full = main_engine(path_full, splits=splits, song_limit=song_limit, artist_limit=artist_limit)
-    X_single, y_single, song_ids_single = csv_batch_extractor(path_single, song_limit=song_limit, artist_limit=artist_limit)
+    X_full, y_full = main_engine_parallel(path_full, splits=splits, song_limit=song_limit, artist_limit=artist_limit, n_mfcc=n_mfcc)
+    X_single, y_single, song_ids_single = csv_batch_extractor(path_single, song_limit=song_limit, artist_limit=artist_limit, n_mfcc=n_mfcc)
     sf = StratifiedKFold(n_splits=5, shuffle=True)
     for train, test in sf.split(X_single, y_single):
         X_train = reduce(lambda x, y: np.concatenate((x,y)), X_full[train])
@@ -133,7 +142,15 @@ def snippet_cv(path_full, path_single, splits=1, song_limit=50, artist_limit=2, 
 
 
 if __name__ == '__main__':
-    X = main_parallelized('../data/pickles/full_songs/', splits=1, song_limit=None, artist_limit=None, pool_size=8)
-    # result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', artist_limit=2, splits=60, song_limit=100)
-    # print np.mean(result)
+    # X = main_parallelized('../data/pickles/full_songs/', splits=1, song_limit=None, artist_limit=None, pool_size=8)
     # X,  y, songs = main_engine('../data/pickles/5s_wo/', splits=20, song_limit=1, artist_limit=1)
+
+    # Xp, yp = main_engine_parallel('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
+
+    # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
+
+    result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=100, artist_limit=2, n_mfcc=8)
+    print 'Middle 5s on 120 snippets:',np.mean(result)
+
+    # result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=None, artist_limit=None, n_mfcc=8)
+    # print 'Middle 5s on 120 snippets, all artist:',np.mean(result)
