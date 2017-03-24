@@ -133,7 +133,6 @@ def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_
     song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
     return feature_list, labels, song_ids
 
-
 def one_artist_feature_extractor(artist_dir, duration=5, format='mp3', song_limit=None, artist_limit=None):
     raw_audio_data, sr, songdirs = file_loader(artist_dir, duration=duration, format=format, limit=song_limit)
     m_mfccs = mfcc_extractor(raw_audio_data, sample_rate=sr)
@@ -190,9 +189,6 @@ def batch_artist_loader(path):
 
 
 if __name__ == '__main__':
-    X, y, song_ids = batch_extractor('../data/wavs/', song_limit=100, artist_limit=None, format='wav')
-    X, y = shuffler(X,y)
-
     X_m, y_m, song_ids_m = batch_extractor('../data/songs/', song_limit=100, artist_limit=2, format='mp3')
     X_m, y_m = shuffler(X_m,y_m)
 
@@ -212,12 +208,7 @@ if __name__ == '__main__':
 
 
     rndmf_classifier = RandomForestClassifier()
-    print "wav forest score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
-    print song_ids[0]
-
-    rndmf_classifier = RandomForestClassifier()
-    print "mp3 score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
-    print song_ids_m[0]
+    print "Random forrest score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
 
     # knn_classifier = KNeighborsClassifier()
     # print "KNN score: ", cross_val_score(knn_classifier, X, y, cv=5).mean()
