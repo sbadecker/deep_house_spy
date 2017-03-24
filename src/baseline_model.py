@@ -100,7 +100,7 @@ def batch_extractor(path, duration=5, format='mp3', song_limit=None, artist_limi
     artists = sorted(glob.glob(path+'*/'))[:artist_limit]
     for i, subdir in enumerate(artists):
         raw_audio_data, sr, songdirs = file_loader(subdir, duration=duration, format=format, limit=song_limit)
-        features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfccs, mfcc_limit=None)
+        features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfccs)
         feature_list.append(features)
         labels.append(np.ones(len(features))*i)
         song_ids.append(songdirs[:song_limit])
@@ -109,7 +109,7 @@ def batch_extractor(path, duration=5, format='mp3', song_limit=None, artist_limi
     song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
     return feature_list, labels, song_ids
 
-def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_mfcc=20, mfcc_limit=None):
+def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_mfcc=20):
     '''
     Takes in a directory with csv files created by the file_loader and extracts the features.
     '''
@@ -122,7 +122,7 @@ def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_
         start = time()
         raw_audio_data = np.load(raw_file)
         # print 'Data loading for artist number %i done' %i, time()-start
-        features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfcc, mfcc_limit=mfcc_limit)
+        features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfcc)
         feature_list.append(features)
         labels.append(np.ones(len(features))*i)
     for meta_file in meta_artistfiles[:artist_limit]:
