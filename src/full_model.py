@@ -118,9 +118,9 @@ def snippet_selector(snippet_features_raw):
     INPUT:
     OUTPUT:
     '''
-    # model = KMeans(n_clusters=30)
-    # model.fit(snippet_features_raw)
-    # return model.cluster_centers_
+    model = KMeans(n_clusters=50)
+    model.fit(snippet_features_raw)
+    return model.cluster_centers_
     return snippet_features_raw
 
 
@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
-    result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=100, artist_limit=2, n_mfcc=8)
+    result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=100, artist_limit=2, n_mfcc=20)
     print 'Middle 5s on 120 snippets:',np.mean(result)
 
     # result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=None, artist_limit=None, n_mfcc=8)
