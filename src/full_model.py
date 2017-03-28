@@ -62,7 +62,7 @@ def main_engine(path, second_snippets=1, song_limit=None, artist_limit=None, n_m
 ############# Parallelized ##############
 #########################################
 
-def main_engine_parallel(path, second_snippets=1, song_limit=None, artist_limit=None, n_mfcc=8, pool_size=4, full_mfccs=False):
+def main_engine_parallel(path, second_snippets=1, song_limit=None, artist_limit=None, n_mfcc=8, pool_size=8, full_mfccs=False):
     start = time()
     X = []
     y = []
@@ -76,6 +76,8 @@ def main_engine_parallel(path, second_snippets=1, song_limit=None, artist_limit=
         songdirs = np.loadtxt(meta_artistfiles[i], dtype=str)[:song_limit]
         pool = multiprocessing.Pool(processes=pool_size)
         data_artist = pool.map(partial(parallel_child, i=i, frames=22050*second_snippets, n_mfcc=n_mfcc, full_mfccs=full_mfccs), raw_audio_data)
+        pool.close()
+        pool.join()
         for song in data_artist:
             X_artist.append(song[0])
             y_artist.append(song[1])
@@ -84,8 +86,7 @@ def main_engine_parallel(path, second_snippets=1, song_limit=None, artist_limit=
         print 'Artist %d done' % (i+1)
     X = reduce(lambda x,y: np.append(x,y, axis=0), X)
     y = reduce(lambda x,y: np.append(x,y, axis=0), y)
-    pool.close()
-    pool.join()
+
     print 'Total runtime: ', time()-start
     return X, y
 
@@ -157,7 +158,10 @@ def snippet_cv(path_full, path_single, frames=22050, song_limit=50, artist_limit
 if __name__ == '__main__':
     # X,  y, songs = main_engine('../data/pickles/5s_wo/', splits=20, song_limit=1, artist_limit=1)
 
-    X, y = main_engine_parallel('../data/pickles/test/', second_snippets=1, song_limit=None, artist_limit=1, n_mfcc=8, full_mfccs=True)
+    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=None, artist_limit=10, n_mfcc=20, full_mfccs=True)
+
+    ### pickling
+    np.save('../data/pickles/10a_alls_20mfccs', [X, y], allow_pickle=True)
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
