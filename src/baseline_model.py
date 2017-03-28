@@ -66,7 +66,7 @@ def parallel_file_loader(path, format='mp3', duration=None, offset=0.0, song_lim
 ########### Feature extractor ###########
 #########################################
 
-def feature_extractor(raw_audio_data, n_mfcc=20, sample_rate=22050):
+def feature_extractor(raw_audio_data, n_mfcc=20, sample_rate=22050, full_mfccs=False):
     '''
     Takes in raw audio data (time series) and loads the MFCC. It then calculates
     the mean for the respective cepstrals.
@@ -75,7 +75,10 @@ def feature_extractor(raw_audio_data, n_mfcc=20, sample_rate=22050):
     feature_list = []
     for song in raw_audio_data:
         # stft = np.abs(librosa.stft(song))
-        mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate, n_mfcc=n_mfcc).T,axis=0)
+        if full_mfccs:
+            mfcc = librosa.feature.mfcc(y=song, sr=sample_rate, n_mfcc=n_mfcc)
+        else:
+            mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate, n_mfcc=n_mfcc).T,axis=0)
         # bpm = librosa.beat.tempo(song)
         # chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
         # mel = np.mean(librosa.feature.melspectrogram(song, sr=sample_rate).T,axis=0)
@@ -109,7 +112,7 @@ def batch_extractor(path, duration=5, format='mp3', song_limit=None, artist_limi
     song_ids = reduce(lambda x, y: np.append(x, y, axis=0), song_ids)
     return feature_list, labels, song_ids
 
-def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_mfcc=20):
+def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_mfcc=20, full_mfccs=False):
     '''
     Takes in a directory with csv files created by the file_loader and extracts the features.
     '''
@@ -122,7 +125,7 @@ def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_
         start = time()
         raw_audio_data = np.load(raw_file)
         # print 'Data loading for artist number %i done' %i, time()-start
-        features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfcc)
+        features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfcc, full_mfccs=full_mfccs)
         feature_list.append(features)
         labels.append(np.ones(len(features))*i)
     for meta_file in meta_artistfiles[:artist_limit]:
