@@ -39,10 +39,9 @@ def main_engine(path, second_snippets=1, song_limit=None, artist_limit=None, n_m
             y_song = []
             song_ids_song = []
             total_splits = song.shape[0]/frames
-            splits = [i*frames for i in range(1, 120)]
+            splits = [n*frames for n in range(1, 120)]
             snippets = np.split(song, splits)
-            if len(snippets[-1]) != len(snippets[0]):
-                snippets = snippets[:-1]
+            snippets = snippets[:-1]
             for snippet in snippets:
                 snippet_features_raw = snippet_feature_extractor(snippet, n_mfcc=n_mfcc)
                 X_song.append(snippet_features_raw)
@@ -84,9 +83,8 @@ def main_engine_parallel(path, second_snippets=1, song_limit=None, artist_limit=
         X.append(np.array(X_artist))
         y.append(np.array(y_artist))
         print 'Artist %d done' % (i+1)
-    X = reduce(lambda x,y: np.append(x,y, axis=0), X)
-    y = reduce(lambda x,y: np.append(x,y, axis=0), y)
-
+    # X = reduce(lambda x,y: np.append(x,y, axis=0), X)
+    # y = reduce(lambda x,y: np.append(x,y, axis=0), y)
     print 'Total runtime: ', time()-start
     return X, y
 
@@ -96,10 +94,9 @@ def parallel_child(song, i, n_mfcc, frames=22050, full_mfccs=False):
     y_song = []
     # song_ids_song = []
     total_splits = song.shape[0]/frames
-    splits = [i*frames for i in range(1, 120)]
+    splits = [n*frames for n in range(1, 120)]
     snippets = np.split(song, splits)
-    if len(snippets[-1]) != len(snippets[0]):
-        snippets = snippets[:-1]
+    snippets = snippets[:-1]
     for snippet in snippets:
         snippet_features_raw = snippet_feature_extractor(snippet, n_mfcc=n_mfcc, full_mfccs=full_mfccs)
         X_song.append(snippet_features_raw)
@@ -158,10 +155,10 @@ def snippet_cv(path_full, path_single, frames=22050, song_limit=50, artist_limit
 if __name__ == '__main__':
     # X,  y, songs = main_engine('../data/pickles/5s_wo/', splits=20, song_limit=1, artist_limit=1)
 
-    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=None, artist_limit=10, n_mfcc=20, full_mfccs=True)
+    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=None, artist_limit=3, n_mfcc=20, full_mfccs=True)
 
     ### pickling
-    np.save('../data/pickles/10a_alls_20mfccs', [X, y], allow_pickle=True)
+    # np.save('../data/pickles/10a_alls_20mfccs', [X, y], allow_pickle=True)
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
