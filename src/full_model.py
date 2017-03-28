@@ -57,7 +57,7 @@ def main_engine(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8):
 ############# Parallelized ##############
 #########################################
 
-def main_engine_parallel(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8, pool_size=8):
+def main_engine_parallel(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8, pool_size=3):
     start = time()
     X = []
     y = []
@@ -118,9 +118,9 @@ def snippet_selector(snippet_features_raw):
     INPUT:
     OUTPUT:
     '''
-    model = KMeans(n_clusters=50)
-    model.fit(snippet_features_raw)
-    return model.cluster_centers_
+    # model = KMeans(n_clusters=50)
+    # model.fit(snippet_features_raw)
+    # return model.cluster_centers_
     return snippet_features_raw
 
 
@@ -142,10 +142,9 @@ def snippet_cv(path_full, path_single, splits=1, song_limit=50, artist_limit=2, 
 
 
 if __name__ == '__main__':
-    # X = main_parallelized('../data/pickles/full_songs/', splits=1, song_limit=None, artist_limit=None, pool_size=8)
     # X,  y, songs = main_engine('../data/pickles/5s_wo/', splits=20, song_limit=1, artist_limit=1)
 
-    # Xp, yp = main_engine_parallel('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
+    X, y = main_engine_parallel('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
