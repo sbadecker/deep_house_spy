@@ -157,10 +157,11 @@ def snippet_cv(path_full, path_single, frames=22050, song_limit=50, artist_limit
 if __name__ == '__main__':
     # X,  y, songs = main_engine('../data/pickles/5s_wo/', splits=20, song_limit=1, artist_limit=1)
 
-    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=None, artist_limit=3, n_mfcc=20, full_mfccs=True)
+    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
 
     ### pickling
-    # np.save('../data/pickles/10a_alls_20mfccs', [X, y], allow_pickle=True)
+    np.save('../data/pickles/X_2a_100s_20mfccs', X, allow_pickle=True)
+    np.save('../data/pickles/y_2a_100s_20mfccs', y, allow_pickle=True)
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
