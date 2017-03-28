@@ -5,7 +5,7 @@ import librosa
 from time import time
 import multiprocessing
 from functools import partial
-from baseline_model import csv_batch_extractor
+from baseline_model import csv_batch_extractor, parallel_file_loader
 from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
@@ -155,10 +155,19 @@ def snippet_cv(path_full, path_single, frames=22050, song_limit=50, artist_limit
 if __name__ == '__main__':
     # X,  y, songs = main_engine('../data/pickles/5s_wo/', splits=20, song_limit=1, artist_limit=1)
 
+
     X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=None, artist_limit=3, n_mfcc=20, full_mfccs=True)
+
+    # X, y = main_engine_parallel('../data/pickles/test/', second_snippets=1, song_limit=None, artist_limit=1, n_mfcc=8, full_mfccs=True)
+
+    raw_audio_data, sr, songdirs = parallel_file_loader('../data/songs/', format='mp3', duration=None, offset=0.0, song_limit=None, sample_rate=44100, csv_export=True, pool_size=8)
+
+    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=None, artist_limit=10, n_mfcc=20, full_mfccs=True)
+
 
     ### pickling
     # np.save('../data/pickles/10a_alls_20mfccs', [X, y], allow_pickle=True)
+
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
