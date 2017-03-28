@@ -16,6 +16,42 @@ from keras.layers import Convolution2D, MaxPooling2D, Conv2D
 from keras.utils import np_utils
 from keras.datasets import mnist
 
+#########################################
+############### Model 1 #################
+#########################################
+
+def cnn_model(X_train, X_test, y_train, y_test, n_classes):
+    y_train = np_utils.to_categorical(y_train, n_classes)
+    y_test = np_utils.to_categorical(y_test, n_classes)
+
+    model = Sequential()
+
+    model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first", input_shape=(1,20,44)))
+    model.add(Conv2D(32, (3, 3), activation='relu'))
+    model.add(Conv2D(32, (3, 3), activation='relu'))
+
+    model.add(MaxPooling2D(pool_size=(2,2)))
+    model.add(Dropout(0.5))
+
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(n_classes, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy',
+                optimizer='adam',
+                metrics=['accuracy'])
+
+    model.fit(X_train, y_train,
+              batch_size=32, epochs=10, verbose=1)
+    return model, y_train, y_test
+
+#########################################
+############## Predictor ################
+#########################################
+
+
+
 
 #########################################
 ############# Helper tools ##############
@@ -38,7 +74,14 @@ if __name__ == '__main__':
     #########################################
     ############# Loading data ##############
     #########################################
-    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
+    # X = np.load('../data/pickles/incl_features/X_2a_100s_20mfccs.npy')
+    # y = np.load('../data/pickles/incl_features/y_2a_100s_20mfccs.npy')
+
+    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=3, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
+
+    # X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
+    # y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
+
 
     X_train, X_test, y_train, y_test = train_test_snippets(X, y)
 
@@ -48,33 +91,12 @@ if __name__ == '__main__':
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
 
-    y_train = np_utils.to_categorical(y_train, 2)
-    y_test = np_utils.to_categorical(y_test, 2)
+    X_train, y_train = shuffler(X_train, y_train)
+
 
     #########################################
     ############# Building CNN ##############
     #########################################
 
-    model = Sequential()
-
-    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(1,8,44)))
-
-    model.add(Conv2D(32, (3, 3), activation='relu'))
-
-    # model.add(MaxPooling2D(pool_size=(2,2)))
-    # model.add(Dropout(0.25))
-
-    model.add(Flatten())
-    model.add(Dense(128, activation='relu'))
-    # model.add(Dropout(0.5))
-    model.add(Dense(2, activation='relu'))
-
-
-    model.compile(loss='categorical_crossentropy',
-                optimizer='adam',
-                metrics=['accuracy'])
-
-    model.fit(X_train, y_train,
-              batch_size=32, epochs=20, verbose=1)
-
-    print model.evaluate(X_test, y_test)
+    model, y_train_n, y_test_n = cnn_model(X_train, X_test, y_train, y_test, 2)
+    print model.evaluate(X_test, y_test_n)
