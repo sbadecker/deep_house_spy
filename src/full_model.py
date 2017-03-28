@@ -84,6 +84,7 @@ def main_engine_parallel(path, splits=1, song_limit=None, artist_limit=None, n_m
     print 'Total runtime: ', time()-start
     return X, y
 
+
 def parallel_child(song, i, n_mfcc, splits=1):
     X_song = []
     y_song = []
@@ -110,7 +111,8 @@ def snippet_feature_extractor(snippet, n_mfcc=20, sample_rate=22050):
     OUTPUT: array (features)
     Extracts features from an array of snippets
     '''
-    mfcc = np.mean(librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc).T,axis=0)
+    # mfcc = np.mean(librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc).T,axis=0)
+    mfcc = librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc)
     return mfcc
 
 def snippet_selector(snippet_features_raw):
@@ -148,8 +150,8 @@ if __name__ == '__main__':
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
-    result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=100, artist_limit=2, n_mfcc=20)
-    print 'Middle 5s on 120 snippets:',np.mean(result)
+    # result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=100, artist_limit=2, n_mfcc=20)
+    # print 'Middle 5s on 120 snippets:',np.mean(result)
 
     # result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=None, artist_limit=None, n_mfcc=8)
     # print 'Middle 5s on 120 snippets, all artist:',np.mean(result)
