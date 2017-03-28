@@ -41,7 +41,7 @@ def file_loader(path, format='mp3', duration=5, offset=0.0, song_limit=None, csv
     print 'File loader for one artist done', time()-start
     return raw_audio_data, sr, songdirs
 
-def parallel_file_loader(path, format='mp3', duration=None, offset=0.0, song_limit=None, csv_export=True, pool_size=4):
+def parallel_file_loader(path, format='mp3', duration=None, offset=0.0, song_limit=None, sample_rate=22050, csv_export=True, pool_size=4):
     '''
     Takes in the path to audio files (mp3) and loads them as floating time series.
     When csv_export is enabled it calls the csv_exporter which stores the
@@ -53,7 +53,9 @@ def parallel_file_loader(path, format='mp3', duration=None, offset=0.0, song_lim
     raw_audio_data = []
     songdirs = glob.glob(path+'*.'+format)[:song_limit]
     pool = multiprocessing.Pool(processes=pool_size)
-    X = pool.map(partial(librosa.load, duration=duration, offset=offset), songdirs)
+    X = pool.map(partial(librosa.load, duration=duration, offset=offset, sr=sample_rate), songdirs)
+    pool.close()
+    pool.join()
     sr = X[0][1]
     print "Audio transformation done", time()-start
     for song in X:
