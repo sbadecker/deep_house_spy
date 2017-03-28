@@ -1,5 +1,5 @@
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from full_model import main_engine_parallel, csv_batch_extractor
@@ -38,12 +38,12 @@ if __name__ == '__main__':
     #########################################
     ############# Loading data ##############
     #########################################
-    X, y = main_engine_parallel('../data/pickles/full_songs/', splits=120, song_limit=100, artist_limit=2, n_mfcc=8, full_mfccs=True)
+    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
 
     X_train, X_test, y_train, y_test = train_test_snippets(X, y)
 
-    X_train = X_train.reshape(X_train.shape[0], 1, 8, 44)
-    X_test = X_test.reshape(X_test.shape[0], 1, 8, 44)
+    X_train = X_train.reshape(X_train.shape[0], 1, 20, 44)
+    X_test = X_test.reshape(X_test.shape[0], 1, 20, 44)
 
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
@@ -57,16 +57,17 @@ if __name__ == '__main__':
 
     model = Sequential()
 
-    model.add(Conv2D(20, (3, 3), activation='tanh', input_shape=(1,8,44), dim_ordering="th"))
+    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(1,8,44)))
 
-    model.add(Conv2D(20, (3, 3), activation='tanh'))
-    model.add(MaxPooling2D(pool_size=(2,2)))
-    model.add(Dropout(0.25))
+    model.add(Conv2D(32, (3, 3), activation='relu'))
+
+    # model.add(MaxPooling2D(pool_size=(2,2)))
+    # model.add(Dropout(0.25))
 
     model.add(Flatten())
-    model.add(Dense(100, activation='tanh'))
-    model.add(Dropout(0.5))
-    model.add(Dense(2, activation='softmax'))
+    model.add(Dense(128, activation='relu'))
+    # model.add(Dropout(0.5))
+    model.add(Dense(2, activation='relu'))
 
 
     model.compile(loss='categorical_crossentropy',
@@ -74,6 +75,6 @@ if __name__ == '__main__':
                 metrics=['accuracy'])
 
     model.fit(X_train, y_train,
-              batch_size=32, epochs=10, verbose=1)
+              batch_size=32, epochs=20, verbose=1)
 
     print model.evaluate(X_test, y_test)
