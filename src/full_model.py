@@ -17,7 +17,7 @@ from functools import partial
 ############# Main engine ###############
 #########################################
 
-def main_engine(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8):
+def main_engine(path, second_snippets=1, song_limit=None, artist_limit=None, n_mfcc=8):
     '''
     INPUT: Directory of Artist directories with pickles in them
     OUTPUT: X, y, song_ids
@@ -28,6 +28,7 @@ def main_engine(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8):
     X = []
     y = []
     song_ids = []
+    frames = second_snippets * 22050
     raw_artistfiles = sorted(glob.glob(path+'raw_data/'+'*.npy'))[:artist_limit]
     meta_artistfiles = sorted(glob.glob(path+'meta_info/'+'*.csv'))[:artist_limit]
     for i, raw_artist in enumerate(raw_artistfiles):
@@ -37,7 +38,11 @@ def main_engine(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8):
             X_song = []
             y_song = []
             song_ids_song = []
-            snippets = np.split(song[song.shape[0]%splits:], splits)
+            total_splits = song.shape[0]/frames
+            splits = [i*frames for i in range(1, 120)]
+            snippets = np.split(song, splits)
+            if len(snippets[-1]) != len(snippets[0]):
+                snippets = snippets[:-1]
             for snippet in snippets:
                 snippet_features_raw = snippet_feature_extractor(snippet, n_mfcc=n_mfcc)
                 X_song.append(snippet_features_raw)
@@ -57,7 +62,7 @@ def main_engine(path, splits=1, song_limit=None, artist_limit=None, n_mfcc=8):
 ############# Parallelized ##############
 #########################################
 
-def main_engine_parallel(path, frames=22050, song_limit=None, artist_limit=None, n_mfcc=8, pool_size=4, full_mfccs=False):
+def main_engine_parallel(path, second_snippets=1, song_limit=None, artist_limit=None, n_mfcc=8, pool_size=4, full_mfccs=False):
     start = time()
     X = []
     y = []
@@ -70,7 +75,7 @@ def main_engine_parallel(path, frames=22050, song_limit=None, artist_limit=None,
         raw_audio_data = np.load(raw_artist)[:song_limit]
         songdirs = np.loadtxt(meta_artistfiles[i], dtype=str)[:song_limit]
         pool = multiprocessing.Pool(processes=pool_size)
-        data_artist = pool.map(partial(parallel_child, i=i, frames=frames, n_mfcc=n_mfcc, full_mfccs=full_mfccs), raw_audio_data)
+        data_artist = pool.map(partial(parallel_child, i=i, frames=22050*second_snippets, n_mfcc=n_mfcc, full_mfccs=full_mfccs), raw_audio_data)
         for song in data_artist:
             X_artist.append(song[0])
             y_artist.append(song[1])
@@ -152,7 +157,7 @@ def snippet_cv(path_full, path_single, frames=22050, song_limit=50, artist_limit
 if __name__ == '__main__':
     # X,  y, songs = main_engine('../data/pickles/5s_wo/', splits=20, song_limit=1, artist_limit=1)
 
-    X, y = main_engine_parallel('../data/pickles/test/', frames=22050, song_limit=None, artist_limit=1, n_mfcc=8, full_mfccs=True)
+    X, y = main_engine_parallel('../data/pickles/test/', second_snippets=1, song_limit=None, artist_limit=1, n_mfcc=8, full_mfccs=True)
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
