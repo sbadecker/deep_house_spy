@@ -19,7 +19,25 @@ def track_id_scraper(artist_id):
         n += 1
     return song_ids
 
-def artist_scraper(inputlist, startpage=1):
+def track_checker(artist_name, artist_id):
+    '''
+    Takes in the artist id and returns the number of songs that this artist has on beatport.
+    '''
+    n_tracks = 0
+    tracks_on_page = 1
+    n = 1
+    while tracks_on_page > 0:
+        url = 'https://www.beatport.com/artist/{}/{}/tracks?page={}'.format(artist_name, artist_id, n)
+        result = requests.get(url)
+        content = result.content
+        soup = BeautifulSoup(content, 'html.parser')
+        # import pdb; pdb.set_trace()
+        tracks_on_page = len(soup.find_all(class_="buk-track-title")[1:])
+        n_tracks += tracks_on_page
+        n += 1
+    return n_tracks
+
+def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
     '''
     INPUT: list with the following form: [int, set()]
     OUTPUT: none
@@ -30,7 +48,7 @@ def artist_scraper(inputlist, startpage=1):
     n = startpage
     classes = [0,0]
     start_time = time()
-    while len(classes) > 1:
+    while len(classes) > 1 and len(inputlist[1]) < max_artists:
         url = 'https://www.beatport.com/genre/deep-house/12/tracks?per-page=150&page={}'.format(n)
         result = requests.get(url)
         content = result.content
@@ -38,7 +56,13 @@ def artist_scraper(inputlist, startpage=1):
         classes = soup.find_all(class_='buk-track-artists')
         for artist in classes[1:]:
             artist_link = artist.find('a').attrs['href'].split('/')
-            inputlist[1].add((artist_link[2], artist_link[3]))
+            artist_name = artist_link[2]
+            artist_id = artist_link[3]
+            if min_songs > 0:
+                if track_checker(artist_name, artist_id) >= min_songs:
+                    inputlist[1].add((artist_name, artist_id))
+            else:
+                inputlist[1].add((artist_name, artist_id))
         inputlist[0] = n
         if n % 10 == 0:
             print n
