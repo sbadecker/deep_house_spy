@@ -4,7 +4,33 @@ import urllib2
 import os
 from time import time
 
-def track_id_scraper(artist_id):
+#########################################
+############# Track scraper #############
+#########################################
+
+def track_data_scraper(artist_class, artist_name, artist_id):
+    '''
+    Takes in an artist name and artist id and scrapes the ids and names from all
+    songs associated with that artist and returns those as a list.
+    '''
+    n = 1
+    song_data = []
+    classes = [0,0]
+    while len(classes) > 1:
+        url = 'https://www.beatport.com/artist/{}/{}/tracks?page={}'.format(artist_name, artist_id, n)
+        result = requests.get(url)
+        content = result.content
+        soup = BeautifulSoup(content, 'html.parser')
+        classes = soup.find_all(class_="buk-track-title")[1:]
+        for song in classes:
+            song_name = song.find('a').attrs['href'].split('/')[-2]
+            song_id = song.find('a').attrs['href'].split('/')[-1]
+            song_data.append([artist_class, artist_name, artist_id, song_name, song_id])
+        n += 1
+    return song_data
+
+
+def track_id_scraper_old(artist_id):
     n = 1
     song_ids = []
     classes = [0,0]
@@ -37,6 +63,11 @@ def track_checker(artist_name, artist_id):
         n += 1
     return n_tracks
 
+
+#########################################
+############ Artist scraper #############
+#########################################
+
 def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
     '''
     INPUT: list with the following form: [int, set()]
@@ -48,21 +79,22 @@ def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
     n = startpage
     classes = [0,0]
     start_time = time()
-    while len(classes) > 1 and len(inputlist[1]) < max_artists:
+    while len(classes) > 1:
         url = 'https://www.beatport.com/genre/deep-house/12/tracks?per-page=150&page={}'.format(n)
         result = requests.get(url)
         content = result.content
         soup = BeautifulSoup(content, 'html.parser')
         classes = soup.find_all(class_='buk-track-artists')
-        for artist in classes[1:]:
-            artist_link = artist.find('a').attrs['href'].split('/')
-            artist_name = artist_link[2]
-            artist_id = artist_link[3]
-            if min_songs > 0:
-                if track_checker(artist_name, artist_id) >= min_songs:
+        while  len(inputlist[1]) < max_artists:
+            for artist in classes[1:]:
+                artist_link = artist.find('a').attrs['href'].split('/')
+                artist_name = artist_link[2]
+                artist_id = artist_link[3]
+                if min_songs > 0:
+                    if track_checker(artist_name, artist_id) >= min_songs:
+                        inputlist[1].add((artist_name, artist_id))
+                else:
                     inputlist[1].add((artist_name, artist_id))
-            else:
-                inputlist[1].add((artist_name, artist_id))
         inputlist[0] = n
         if n % 10 == 0:
             print n
@@ -79,6 +111,11 @@ def artist_saver(inputlist, outputfile):
         f.write(str(inputlist[0])+'\n')
         for line in inputlist[1]:
             f.write(','.join(line)+'\n')
+
+
+#########################################
+############## Downloader ###############
+#########################################
 
 def beatport_downloader(song_ids, directory='./'):
     if not os.path.exists(directory):
