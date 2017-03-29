@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from full_model import main_engine_parallel, csv_batch_extractor
 from helper_tools import shuffler
+from scipy.stats import mode
 
 
 #########################################
@@ -34,7 +35,7 @@ def cnn_model(X_train, X_test, y_train, y_test, n_classes):
     model.add(Dropout(0.5))
 
     model.add(Flatten())
-    model.add(Dense(128, activation='relu'))
+    model.add(Dense(256, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(n_classes, activation='softmax'))
 
@@ -50,8 +51,29 @@ def cnn_model(X_train, X_test, y_train, y_test, n_classes):
 ############## Predictor ################
 #########################################
 
+def cnn_predict(model, song, reshape=True):
+    '''
+    Takes in a CCN model and an array with snippets of a song (shape: n_snippets, buckets, frames) and runs a prediction
+    on them. The snippets of each song are predicted individually. The prediction
+    is then averaged.
+    '''
+    if reshape:
+        song = song.reshape(song.shape[0],1,song.shape[1],song.shape[2])
+    prediction = model.predict_classes(song, verbose=0)
+    mode_prediction = mode(prediction).mode[0]
+    return mode_prediction
 
+#########################################
+############ Analysis tools #############
+#########################################
 
+def ensemble_accuracy(model, X_test, y_test, start=None, end=None):
+    result = []
+    for i, song in enumerate(X_test):
+        prediction = cnn_predict(model, song[start:end], reshape=True)
+        correct = (prediction == y_test[:,1][i])*1.
+        result.append(correct)
+    return result
 
 #########################################
 ############# Helper tools ##############
@@ -63,27 +85,29 @@ def train_test_snippets(X, y):
     training and test sets and then flattening the arrays.
     '''
     X_train_songs, X_test_songs, y_train_songs, y_test_songs = train_test_split(X, y)
+    X_test_untouched = X_test_songs
+    y_test_untouched = y_test_songs
     X_train = reduce(lambda x, y: np.concatenate((x,y)), X_train_songs)
     X_test = reduce(lambda x, y: np.concatenate((x,y)), X_test_songs)
     y_train = reduce(lambda x, y: np.concatenate((x,y)), y_train_songs)
     y_test = reduce(lambda x, y: np.concatenate((x,y)), y_test_songs)
-    return X_train, X_test, y_train, y_test
-
+    return X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched
 
 if __name__ == '__main__':
     #########################################
     ############# Loading data ##############
     #########################################
-    # X = np.load('../data/pickles/incl_features/X_2a_100s_20mfccs.npy')
-    # y = np.load('../data/pickles/incl_features/y_2a_100s_20mfccs.npy')
+    X = np.load('../data/pickles/incl_features/X_2a_100s_20mfccs.npy')
+    y = np.load('../data/pickles/incl_features/y_2a_100s_20mfccs.npy')
 
-    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=3, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
+
+    # X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=2, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
 
     # X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
     # y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
 
 
-    X_train, X_test, y_train, y_test = train_test_snippets(X, y)
+    X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = train_test_snippets(X, y)
 
     X_train = X_train.reshape(X_train.shape[0], 1, 20, 44)
     X_test = X_test.reshape(X_test.shape[0], 1, 20, 44)
@@ -91,12 +115,15 @@ if __name__ == '__main__':
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
 
-    X_train, y_train = shuffler(X_train, y_train)
-
 
     #########################################
     ############# Building CNN ##############
     #########################################
 
     model, y_train_n, y_test_n = cnn_model(X_train, X_test, y_train, y_test, 2)
-    print model.evaluate(X_test, y_test_n)
+    general_accuray = model.evaluate(X_test, y_test_n)[-1]
+    print 'General accuracy: ', general_accuray
+    result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
+    print 'Ensemble accuracy: ', np.mean(result)
+    result_middle = ensemble_accuracy(model, X_test_untouched, y_test_untouched, start=60, end=65)
+    print 'Middle 5s ensemble accuracy: ', np.mean(result_middle)
