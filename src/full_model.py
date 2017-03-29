@@ -121,10 +121,11 @@ def snippet_feature_extractor(snippet, n_mfcc=20, sample_rate=22050, full_mfccs=
     Extracts features from an array of snippets
     '''
     if full_mfccs:
-        mfcc = librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc)
+        # mfcc = librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc)
+        mel = librosa.feature.melspectrogram(y=snippet, n_fft=2048, hop_length=1024)
     else:
         mfcc = np.mean(librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc).T,axis=0)
-    return mfcc
+    return mel
 
 def snippet_selector(snippet_features_raw):
     '''
@@ -160,8 +161,8 @@ if __name__ == '__main__':
     X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
 
     ### pickling
-    np.save('../data/pickles/X_2a_100s_20mfccs', X, allow_pickle=True)
-    np.save('../data/pickles/y_2a_100s_20mfccs', y, allow_pickle=True)
+    # np.save('../data/pickles/X_2a_100s_20mfccs', X, allow_pickle=True)
+    # np.save('../data/pickles/y_2a_100s_20mfccs', y, allow_pickle=True)
 
     # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
 
@@ -169,4 +170,4 @@ if __name__ == '__main__':
     # print 'Middle 5s on 120 snippets:',np.mean(result)
 
     # result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=None, artist_limit=None, n_mfcc=8)
-    # print 'Middle 5s on 120 snippets, all artist:',np.mean(result)
+    #
