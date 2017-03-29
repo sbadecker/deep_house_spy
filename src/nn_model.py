@@ -28,10 +28,10 @@ def cnn_model(X_train, X_test, y_train, y_test, n_classes):
     model = Sequential()
 
     model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first", input_shape=(1,20,44)))
-    model.add(Conv2D(32, (3, 3), activation='relu'))
-    model.add(Conv2D(32, (3, 3), activation='relu'))
+    model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first"))
+    model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first"))
 
-    model.add(MaxPooling2D(pool_size=(2,2)))
+    model.add(MaxPooling2D(pool_size=(2,2), data_format="channels_first"))
     model.add(Dropout(0.5))
 
     model.add(Flatten())
@@ -100,20 +100,35 @@ def cnn_model_2(X_train, X_test, y_train, y_test, n_classes):
 
 
 #########################################
-############## Predictor ################
+############## Predictors ###############
 #########################################
 
 def cnn_predict(model, song, reshape=True):
     '''
-    Takes in a CCN model and an array with snippets of a song (shape: n_snippets, buckets, frames) and runs a prediction
-    on them. The snippets of each song are predicted individually. The prediction
-    is then averaged.
+    Takes in a CCN model and an array with snippets of a song (shape: n_snippets,
+    buckets, frames) and runs a prediction on them. The snippets of each song
+    are predicted individually. The prediction is then averaged.
     '''
     if reshape:
         song = song.reshape(song.shape[0],1,song.shape[1],song.shape[2])
-    prediction = model.predict_classes(song, verbose=0)
-    mode_prediction = mode(prediction).mode[0]
-    return mode_prediction
+    proba_snippets = model.predict_proba(song, verbose=0)
+    proba_classes = np.mean(proba_snippets, axis=0)
+    top_prediction = proba_classes.argmax()
+    return top_prediction
+
+def top_n_predict(model, song, n_artists, reshape=True):
+    '''
+    Takes in a CCN model and an array with snippets of a song (shape: n_snippets,
+    buckets, frames) and runs a prediction on them. The snippets of each song
+    are predicted individually. The softmax arrays are then summed averaged for
+    along the classes and the top n_artists classes are returned including the probabilities.
+    '''
+    if reshape:
+        song = song.reshape(song.shape[0],1,song.shape[1],song.shape[2])
+    prediction = model.predict_proba(song, verbose=0)
+    proba_classes = np.mean(prediction, axis=0)
+    top_n_artists = (proba_classes*-1).argsort()[:n_artists]
+    return top_n_artists
 
 #########################################
 ############ Analysis tools #############
@@ -123,6 +138,14 @@ def ensemble_accuracy(model, X_test, y_test, start=None, end=None):
     result = []
     for i, song in enumerate(X_test):
         prediction = cnn_predict(model, song[start:end], reshape=True)
+        correct = (prediction == y_test[:,1][i])*1.
+        result.append(correct)
+    return result
+
+def top_n_accuracy(model, X_test, y_test, n_artists, start=None, end=None):
+    result = []
+    for i, song in enumerate(X_test):
+        prediction = top_n_predict(model, song, n_artists, reshape=True)[0]
         correct = (prediction == y_test[:,1][i])*1.
         result.append(correct)
     return result
