@@ -87,14 +87,14 @@ def cnn_model_2(X_train, X_test, y_train, y_test, n_classes):
     model.add(Dense(1024, activation='relu'))
     model.add(Dropout(0.5))
 
-    model.add(Dense(2, activation='softmax'))
+    model.add(Dense(n_classes, activation='softmax'))
 
     model.compile(loss='categorical_crossentropy',
                 optimizer='adam',
                 metrics=['accuracy'])
 
     model.fit(X_train, y_train,
-              batch_size=32, epochs=10, verbose=1)
+              batch_size=32, epochs=20, verbose=1)
 
     return model, y_train, y_test
 
@@ -152,14 +152,14 @@ if __name__ == '__main__':
     #########################################
     ############# Loading data ##############
     #########################################
-    X = np.load('../data/pickles/incl_features/X_2a_100s_20mfccs.npy')
-    y = np.load('../data/pickles/incl_features/y_2a_100s_20mfccs.npy')
+    # X = np.load('../data/pickles/incl_features/X_2a_100s_20mfccs.npy')
+    # y = np.load('../data/pickles/incl_features/y_2a_100s_20mfccs.npy')
 
 
     # X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=2, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
 
-    # X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
-    # y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
+    X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
+    y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
 
 
     X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = train_test_snippets(X, y)
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     #########################################
 
 
-    model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 2)
+    model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 10)
     general_accuray = model.evaluate(X_test, y_test_n)[-1]
     print 'General accuracy: ', general_accuray
     result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
