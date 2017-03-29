@@ -145,8 +145,8 @@ def ensemble_accuracy(model, X_test, y_test, start=None, end=None):
 def top_n_accuracy(model, X_test, y_test, n_artists, start=None, end=None):
     result = []
     for i, song in enumerate(X_test):
-        prediction = top_n_predict(model, song, n_artists, reshape=True)[0]
-        correct = (prediction == y_test[:,1][i])*1.
+        prediction = top_n_predict(model, song[start:end], n_artists, reshape=True)
+        correct = (y_test[:,1][i] in prediction)*1.
         result.append(correct)
     return result
 
