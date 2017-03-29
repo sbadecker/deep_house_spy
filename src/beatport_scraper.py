@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import urllib2
 import os
+import numpy as np
 from time import time
 
 #########################################
@@ -25,7 +26,7 @@ def tracklist_creator(artist_data):
             if song[-1] not in [row[-1] for row in song_list]:
                 song_list.append(song)
                 number_of_songs += 1
-        artist_index.append([artist_class, artist_name, number_of_songs])
+        artist_index.append([str(artist_class), artist_name, str(number_of_songs)])
         artist_class += 1
     return song_list, artist_index
 
@@ -46,7 +47,7 @@ def track_data_scraper(artist_class, artist_name, artist_id):
         for song in classes:
             song_name = song.find('a').attrs['href'].split('/')[-2]
             song_id = song.find('a').attrs['href'].split('/')[-1]
-            song_data.append([artist_class, artist_name, artist_id, song_name, song_id])
+            song_data.append([str(artist_class), artist_name, artist_id, song_name, song_id])
         n += 1
     return song_data
 
@@ -121,6 +122,30 @@ def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
             print 'Time elapsed', time()-start_time
         n += 1
 
+def beatporturl_artist_scraper(beatport_url, inputlist, min_songs=None):
+    '''
+    INPUT: list with the following form: [int, set()]
+    OUTPUT: none
+    The int on index 0 of the list will be filled with the number of the latest
+    page that has been scraped. The set will be updated with the artists. If the
+    process is stopped, it can be resumed at a later point in time.
+    '''
+    classes = [0,0]
+    start_time = time()
+    url = beatport_url
+    result = requests.get(url)
+    content = result.content
+    soup = BeautifulSoup(content, 'html.parser')
+    classes = soup.find_all(class_='buk-track-artists')
+    for artist in classes[1:]:
+        artist_link = artist.find('a').attrs['href'].split('/')
+        artist_name = artist_link[2]
+        artist_id = artist_link[3]
+        if min_songs > 0:
+            if track_checker(artist_name, artist_id) >= min_songs:
+                inputlist[1].add((artist_name, artist_id))
+        else:
+            inputlist[1].add((artist_name, artist_id))
 
 #########################################
 ############## Downloader ###############
@@ -160,11 +185,14 @@ def artist_saver(inputlist, outputfile):
     Takes the list of the artist_scraper and saves it as a csv file
     '''
     with open(outputfile, 'wb') as f:
-        # f.write(str(inputlist[0])+'\n')
+        f.write(str(inputlist[0])+'\n')
         for line in inputlist[1]:
             f.write(','.join(line)+'\n')
 
 if __name__ == '__main__':
-    for song in artists:
-        tracks = track_id_scraper(artist)
-        beatport_downloader(tracks, './'+artist.split('/')[0]+'/')
+    artists = np.loadtxt('../data/100_artists/artists.csv', dtype=str, delimiter=',')
+    song_list, artist_index = tracklist_creator(artists)
+    #
+    # for song in artists:
+    #     tracks = track_id_scraper(artist)
+    #     beatport_downloader(tracks, './'+artist.split('/')[0]+'/')
