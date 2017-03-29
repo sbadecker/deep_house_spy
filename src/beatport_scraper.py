@@ -8,6 +8,27 @@ from time import time
 ############# Track scraper #############
 #########################################
 
+def tracklist_creator(artist_data):
+    '''
+    Takes in a list of lists with artist_name and artist_ids. Loops through
+    all artists, scrapes their songs with the track_data_scraper and removes
+    duplicate songs. It also assigns a class to each artist and returns an
+    artist_index with the artist_class, artist_id and number of songs.
+    '''
+    artist_index = []
+    song_list = []
+    artist_class = 0
+    for artist_name, artist_id in artist_data:
+        number_of_songs = 0
+        song_data = track_data_scraper(artist_class, artist_name, artist_id)
+        for song in song_data:
+            if song[-1] not in [row[-1] for row in song_list]:
+                song_list.append(song)
+                number_of_songs += 1
+        artist_index.append([artist_class, artist_name, number_of_songs])
+        artist_class += 1
+    return song_list, artist_index
+
 def track_data_scraper(artist_class, artist_name, artist_id):
     '''
     Takes in an artist name and artist id and scrapes the ids and names from all
@@ -28,7 +49,6 @@ def track_data_scraper(artist_class, artist_name, artist_id):
             song_data.append([artist_class, artist_name, artist_id, song_name, song_id])
         n += 1
     return song_data
-
 
 def track_id_scraper_old(artist_id):
     n = 1
@@ -57,7 +77,6 @@ def track_checker(artist_name, artist_id):
         result = requests.get(url)
         content = result.content
         soup = BeautifulSoup(content, 'html.parser')
-        # import pdb; pdb.set_trace()
         tracks_on_page = len(soup.find_all(class_="buk-track-title")[1:])
         n_tracks += tracks_on_page
         n += 1
@@ -85,18 +104,19 @@ def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
         content = result.content
         soup = BeautifulSoup(content, 'html.parser')
         classes = soup.find_all(class_='buk-track-artists')
-        while  len(inputlist[1]) < max_artists:
-            for artist in classes[1:]:
-                artist_link = artist.find('a').attrs['href'].split('/')
-                artist_name = artist_link[2]
-                artist_id = artist_link[3]
-                if min_songs > 0:
-                    if track_checker(artist_name, artist_id) >= min_songs:
-                        inputlist[1].add((artist_name, artist_id))
-                else:
+        for artist in classes[1:]:
+            artist_link = artist.find('a').attrs['href'].split('/')
+            artist_name = artist_link[2]
+            artist_id = artist_link[3]
+            if min_songs > 0:
+                if track_checker(artist_name, artist_id) >= min_songs:
                     inputlist[1].add((artist_name, artist_id))
+            else:
+                inputlist[1].add((artist_name, artist_id))
+            if len(inputlist[1]) == max_artists:
+                return None
         inputlist[0] = n
-        if n % 10 == 0:
+        if n % 2 == 0:
             print n
             print 'Time elapsed', time()-start_time
         n += 1
