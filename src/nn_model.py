@@ -13,7 +13,7 @@ from scipy.stats import mode
 
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Convolution2D, MaxPooling2D, Conv2D
+from keras.layers import Convolution2D, MaxPooling2D, Conv2D, ZeroPadding2D, GlobalAveragePooling2D
 from keras.utils import np_utils
 from keras.datasets import mnist
 
@@ -48,6 +48,58 @@ def cnn_model(X_train, X_test, y_train, y_test, n_classes):
     return model, y_train, y_test
 
 #########################################
+############### Model 2 #################
+#########################################
+
+def cnn_model_2(X_train, X_test, y_train, y_test, n_classes):
+    y_train = np_utils.to_categorical(y_train, n_classes)
+    y_test = np_utils.to_categorical(y_test, n_classes)
+
+    model = Sequential()
+
+    model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first", input_shape=(1, 20, 44)))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
+    model.add(Conv2D(32, (3, 3), data_format="channels_first", activation='relu'))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
+    model.add(MaxPooling2D(pool_size=(2,2), data_format="channels_first"))
+    model.add(Dropout(0.25))
+
+    model.add(Conv2D(64, (3, 3), data_format="channels_first", activation='relu'))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
+    model.add(Conv2D(64, (3, 3), data_format="channels_first", activation='relu'))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
+    model.add(MaxPooling2D(pool_size=(3,3), data_format="channels_first"))
+    model.add(Dropout(0.25))
+
+    model.add(Conv2D(128, (3, 3), data_format="channels_first", activation='relu'))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
+    model.add(Conv2D(128, (3, 3), data_format="channels_first", activation='relu'))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
+    model.add(MaxPooling2D(pool_size=(3,3), data_format="channels_first"))
+    model.add(Dropout(0.25))
+
+    model.add(Conv2D(256, (3, 3), activation='relu', data_format="channels_first"))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
+    model.add(Conv2D(256, (3, 3), activation='relu', data_format="channels_first"))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
+    model.add(GlobalAveragePooling2D(data_format="channels_first"))
+
+    model.add(Dense(1024, activation='relu'))
+    model.add(Dropout(0.5))
+
+    model.add(Dense(2, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy',
+                optimizer='adam',
+                metrics=['accuracy'])
+
+    model.fit(X_train, y_train,
+              batch_size=32, epochs=10, verbose=1)
+
+    return model, y_train, y_test
+
+
+#########################################
 ############## Predictor ################
 #########################################
 
@@ -79,7 +131,7 @@ def ensemble_accuracy(model, X_test, y_test, start=None, end=None):
 ############# Helper tools ##############
 #########################################
 
-def train_test_snippets(X, y):
+def train_test_snippets(X, y, untouched=True):
     '''
     Takes in buckets of snippets each representing a song, splitting them into
     training and test sets and then flattening the arrays.
@@ -91,7 +143,10 @@ def train_test_snippets(X, y):
     X_test = reduce(lambda x, y: np.concatenate((x,y)), X_test_songs)
     y_train = reduce(lambda x, y: np.concatenate((x,y)), y_train_songs)
     y_test = reduce(lambda x, y: np.concatenate((x,y)), y_test_songs)
-    return X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched
+    if untouched:
+        return X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched
+    else:
+        return X_train, X_test, y_train, y_test
 
 if __name__ == '__main__':
     #########################################
@@ -120,7 +175,8 @@ if __name__ == '__main__':
     ############# Building CNN ##############
     #########################################
 
-    model, y_train_n, y_test_n = cnn_model(X_train, X_test, y_train, y_test, 2)
+
+    model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 2)
     general_accuray = model.evaluate(X_test, y_test_n)[-1]
     print 'General accuracy: ', general_accuray
     result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
