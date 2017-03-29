@@ -121,32 +121,22 @@ def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
             print 'Time elapsed', time()-start_time
         n += 1
 
-def artist_saver(inputlist, outputfile):
-    '''
-    INPUT: list, outputfile
-    OUTPUT: none
-    Takes the list of the artist_scraper and saves it as a csv file
-    '''
-    with open(outputfile, 'wb') as f:
-        f.write(str(inputlist[0])+'\n')
-        for line in inputlist[1]:
-            f.write(','.join(line)+'\n')
-
 
 #########################################
 ############## Downloader ###############
 #########################################
 
-def beatport_downloader(song_ids, directory='./'):
+def beatport_downloader(song_list, directory='./'):
     if not os.path.exists(directory):
         os.makedirs(directory)
-    for song in song_ids:
-        song_url = 'http://geo-samples.beatport.com/lofi/{}.LOFI.mp3'.format(song)
+    for artist_class, artist_name, artist_id, song_name, song_id in song:
+        song_url = 'http://geo-samples.beatport.com/lofi/{}.LOFI.mp3'.format(song_id)
         song_file = urllib2.urlopen(song_url)
-        with open(directory+song+'.mp3', 'wb') as f:
+        song_file_name = artist_class+'_'+artist_name+'_'+artist_id+'_'+song_name+'_'+song_id+'.mp3'
+        with open(directory+song+song_file_name, 'wb') as f:
             f.write(song_file.read())
 
-def batch_downloader(artist_list):
+def batch_downloader_old(artist_list):
     '''
     INPUT: list
     OUT: None
@@ -158,9 +148,23 @@ def batch_downloader(artist_list):
         tracks = track_id_scraper(artist[0]+'/'+artist[1])
         beatport_downloader(tracks, './'+artist[0]+'/')
 
+
+#########################################
+############### CSV saver ###############
+#########################################
+
+def artist_saver(inputlist, outputfile):
+    '''
+    INPUT: list, outputfile
+    OUTPUT: none
+    Takes the list of the artist_scraper and saves it as a csv file
+    '''
+    with open(outputfile, 'wb') as f:
+        # f.write(str(inputlist[0])+'\n')
+        for line in inputlist[1]:
+            f.write(','.join(line)+'\n')
+
 if __name__ == '__main__':
-    artists = ['rodriguez-jr/14633', 'sascha-funke/6262', 'and-me/61960',
-               'mandingo/21472', 'aero-manyelo/127207', 'eagles-and-butterflies/290967']
-    for artist in artists:
+    for song in artists:
         tracks = track_id_scraper(artist)
         beatport_downloader(tracks, './'+artist.split('/')[0]+'/')
