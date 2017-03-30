@@ -83,6 +83,23 @@ def track_checker(artist_name, artist_id):
         n += 1
     return n_tracks
 
+def list_cleaner(song_list):
+    song_list_cleaned = []
+    for song in song_list:
+        if song[-2] not in [row[-2] for row in song_list_cleaned]:
+            song_list_cleaned.append(song)
+    return song_list_cleaned
+
+def list_reducer(song_list, max_per_class, max_class):
+    song_list = np.array(song_list)
+    np.random.shuffle(song_list)
+    song_list_reduced = song_list[1:2]
+    for i in range(max_class):
+        reduced_chunk = song_list[song_list[:,0]==str(i)][:max_per_class]
+        # import pdb; pdb.set_trace()
+        song_list_reduced = np.append(song_list_reduced, reduced_chunk, axis=0)
+    return song_list_reduced[1:]
+
 
 #########################################
 ############ Artist scraper #############
@@ -189,6 +206,6 @@ def artist_saver(inputlist, outputfile):
             f.write(','.join(line)+'\n')
 
 if __name__ == '__main__':
-    song_list = np.loadtxt('./song_list.csv', dtype=str, delimiter=',')
+    song_list = np.loadtxt('../data/100_artists/song_list_reduced.csv', dtype=str, delimiter=',')
 
     beatport_downloader(song_list, '../data/100_artists/mp3s/')
