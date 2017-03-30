@@ -78,11 +78,14 @@ def song_combiner(path):
     '''
     X = []
     y = []
-    song_dirs = glob.glob(path+'*.npy')[:10]
+    song_dirs = glob.glob(path+'*.npy')
     for song in song_dirs:
         X_song = np.load(song)
         artist = [int(song.split('/')[-1].split('_')[0])]
+        print song
+        print artist
         y_song = artist * X_song.shape[0]
+        print y_song
         X.append(X_song)
         y.append(y_song)
     return np.array(X), np.array(y)
