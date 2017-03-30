@@ -80,26 +80,16 @@ def song_combiner(path):
     X = []
     y = []
     song_dirs = glob.glob(path+'*.npy')
-    for song in song_dirs:
+    for i, song in enumerate(song_dirs):
         X_song = np.load(song)
         artist = [int(song.split('/')[-1].split('_')[0])]
-        print song
-        print artist
         y_song = artist * X_song.shape[0]
-        print y_song
         X.append(X_song)
         y.append(y_song)
+        print i
     return np.array(X), np.array(y)
 
 
 if __name__ == '__main__':
-    # parallel_audio_extractor('../data/100_artists/mp3s2/')
-    # parallel_feature_extractor('../data/100_artists/mp3s2/output/')
-    # i = 8
-    # while len(glob.glob('../data/100_artists/mp3s2/output/*.*'))>i:
-    #     try:
-    #         parallel_feature_extractor('../data/100_artists/mp3s2/output/', pool_size=7, i=i)
-    #     except:
-    move_done('/home/ubuntu/deep_house_spy/deep_house_spy/data/100_artists/mp3s2/output/', '/home/ubuntu/deep_house_spy/deep_house_spy/data/100_artists/mp3s2/output/features_extracted/', 'npy')
-            # i += 1
-            # print i
+    # X, y = song_combiner('../data/100_artists/features_extracted/')
+    pass

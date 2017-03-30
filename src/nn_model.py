@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from full_model import main_engine_parallel, csv_batch_extractor
 from helper_tools import shuffler
 from scipy.stats import mode
-
+from song_processing_pipeline import song_combiner
 
 #########################################
 ############# Keras import ##############
@@ -194,34 +194,39 @@ if __name__ == '__main__':
     #########################################
     ############# Loading data ##############
     #########################################
-    # X = np.load('../data/pickles/incl_features/X_2a_100s_20mfccs.npy')
-    # y = np.load('../data/pickles/incl_features/y_2a_100s_20mfccs.npy')
+    # X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
+    # y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
 
+    X, y = song_combiner('../data/100_artists/features_extracted/')
+    print 'Songs combined.'
 
-    # X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=2, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
-
-    X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
-    y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
-    #
-    #
     X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = stratified_split(X, y)
-    #
-    # X_train = X_train.reshape(X_train.shape[0], 1, 20, 44)
-    # X_test = X_test.reshape(X_test.shape[0], 1, 20, 44)
-    #
-    # X_train = X_train.astype('float32')
-    # X_test = X_test.astype('float32')
+    print 'Train test split done.'
 
+    np.save('../data/100_artists/X_train', X_train, allow_pickle=True)
+    np.save('../data/100_artists/X_test', X_test, allow_pickle=True)
+    np.save('../data/100_artists/y_train', y_train, allow_pickle=True)
+    np.save('../data/100_artists/y_test', y_test, allow_pickle=True)
+    np.save('../data/100_artists/X_test_untouched', X_test_untouched, allow_pickle=True)
+    np.save('../data/100_artists/y_test_untouched', y_test_untouched, allow_pickle=True)
+    print 'Pickling done.'
+
+    X_train = X_train.reshape(X_train.shape[0], 1, 20, 44)
+    X_test = X_test.reshape(X_test.shape[0], 1, 20, 44)
+
+    X_train = X_train.astype('float32')
+    X_test = X_test.astype('float32')
 
     #########################################
     ############# Building CNN ##############
     #########################################
 
+    print 'Building model.'
 
-    # model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 10)
-    # general_accuray = model.evaluate(X_test, y_test_n)[-1]
-    # print 'General accuracy: ', general_accuray
-    # result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
-    # print 'Ensemble accuracy: ', np.mean(result)
-    # result_middle = ensemble_accuracy(model, X_test_untouched, y_test_untouched, start=60, end=65)
-    # print 'Middle 5s ensemble accuracy: ', np.mean(result_middle)
+    model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 100)
+    general_accuray = model.evaluate(X_test, y_test_n)[-1]
+    print 'General accuracy: ', general_accuray
+    result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
+    print 'Ensemble accuracy: ', np.mean(result)
+    result_middle = ensemble_accuracy(model, X_test_untouched, y_test_untouched, start=60, end=65)
+    print 'Middle 5s ensemble accuracy: ', np.mean(result_middle)
