@@ -121,11 +121,11 @@ def snippet_feature_extractor(snippet, n_mfcc=20, sample_rate=22050, full_mfccs=
     Extracts features from an array of snippets
     '''
     if full_mfccs:
-        # mfcc = librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc)
-        mel = librosa.feature.melspectrogram(y=snippet, n_fft=2048, hop_length=1024)
+        mfcc = librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc)
+        # mel = librosa.feature.melspectrogram(y=snippet, n_fft=2048, hop_length=1024)
     else:
         mfcc = np.mean(librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc).T,axis=0)
-    return mel
+    return mfcc
 
 def snippet_selector(snippet_features_raw):
     '''
