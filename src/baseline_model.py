@@ -64,6 +64,7 @@ def parallel_file_loader(path, format='mp3', duration=None, offset=0.0, song_lim
         csv_exporter(raw_audio_data, path, songdirs)
     return raw_audio_data, sr, songdirs
 
+
 #########################################
 ########### Feature extractor ###########
 #########################################
