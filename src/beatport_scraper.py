@@ -208,4 +208,4 @@ def artist_saver(inputlist, outputfile):
 if __name__ == '__main__':
     song_list = np.loadtxt('../data/100_artists/song_list_reduced.csv', dtype=str, delimiter=',')
 
-    beatport_downloader(song_list, '../data/100_artists/mp3s/')
+    beatport_downloader(song_list[:7968], '../data/100_artists/mp3s/')
