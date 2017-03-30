@@ -67,4 +67,4 @@ def parallel_feature_child(song, path, frames, n_mfcc):
 
 if __name__ == '__main__':
     parallel_audio_extractor('../data/100_artists/mp3s/')
-    parallel_feature_extractor('../data/100_artists/mp3s/output/', pool_size=7)
+    parallel_feature_extractor('../data/100_artists/mp3s/output/', pool_size=8)
