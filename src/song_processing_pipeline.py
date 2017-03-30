@@ -91,5 +91,11 @@ def song_combiner(path):
 
 
 if __name__ == '__main__':
-    # X, y = song_combiner('../data/100_artists/features_extracted/')
-    pass
+    parallel_audio_extractor('../data/100_artists/mp3s2/')
+    i = 0
+    while len(glob.globe('../data/100_artists/mp3s2/output/')) > i:
+        try:
+            parallel_feature_extractor('../data/100_artists/mp3s2/.output/', pool_size=8)
+        except:
+            move_done('../data/100_artists/mp3s2/output/', '../data/100_artists/mp3s2/output/features_extracted/', file_extension='*')
+            i += 1
