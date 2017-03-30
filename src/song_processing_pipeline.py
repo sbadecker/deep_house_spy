@@ -55,6 +55,7 @@ def parallel_feature_child(song, path, frames, n_mfcc):
     if not os.path.exists(path+'features_extracted/'):
         os.makedirs(path+'features_extracted/')
     X_song = []
+    print song
     raw_audio_song = np.load(song)
     total_splits = raw_audio_song.shape[0]/frames
     splits = [n*frames for n in range(1, 120)]
@@ -74,28 +75,31 @@ def song_combiner(path):
     '''
     Takes in a path with npy files that from the parallel_feature_extractor and
     combines those into X  (n_songs x n_snippets x n_mfccs x time_frames) and
-    y (n_songs x n_snippets x 1).
+    y (n_songs x n_snippets).
     '''
     X = []
     y = []
-    song_dirs = glob.glob(path+'*.npy')[:10]
+    song_dirs = glob.glob(path+'*.npy')
     for song in song_dirs:
         X_song = np.load(song)
         artist = [int(song.split('/')[-1].split('_')[0])]
+        print song
+        print artist
         y_song = artist * X_song.shape[0]
+        print y_song
         X.append(X_song)
         y.append(y_song)
     return np.array(X), np.array(y)
 
 
 if __name__ == '__main__':
-    parallel_audio_extractor('../data/100_artists/mp3s2/')
+    # parallel_audio_extractor('../data/100_artists/mp3s2/')
     # parallel_feature_extractor('../data/100_artists/mp3s2/output/')
-    i = 0
-    while len(glob.glob('../data/100_artists/mp3s2/output/*.*'))>i:
-        try:
-            parallel_feature_extractor('../data/100_artists/mp3s2/output/', pool_size=7, i=i)
-        except:
-            move_done('/home/ubuntu/deep_house_spy/deep_house_spy/data/100_artists/mp3s2/output/', '/home/ubuntu/deep_house_spy/deep_house_spy/data/100_artists/mp3s2/output/features_extracted/', 'npy')
-            i += 1
-            print i
+    # i = 8
+    # while len(glob.glob('../data/100_artists/mp3s2/output/*.*'))>i:
+    #     try:
+    #         parallel_feature_extractor('../data/100_artists/mp3s2/output/', pool_size=7, i=i)
+    #     except:
+    move_done('/home/ubuntu/deep_house_spy/deep_house_spy/data/100_artists/mp3s2/output/', '/home/ubuntu/deep_house_spy/deep_house_spy/data/100_artists/mp3s2/output/features_extracted/', 'npy')
+            # i += 1
+            # print i
