@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import glob
 import requests
 import urllib2
 import os
@@ -190,10 +191,17 @@ def batch_downloader_old(artist_list):
         tracks = track_id_scraper(artist[0]+'/'+artist[1])
         beatport_downloader(tracks, './'+artist[0]+'/')
 
+def download_checker(path, song_list):
+    downloaded = glob.glob(path+'*.mp3')
+    downloaded = [i.split('/')[-1] for i in downloaded]
+    downloaded = [i[:-4].split('_') for i in downloaded]
+    download_list = [list(line) for line in song_list if list(line) not in downloaded]
+    return download_list
 
 #########################################
 ############### CSV saver ###############
 #########################################
+
 def artist_saver(inputlist, outputfile):
     '''
     INPUT: list, outputfile
@@ -205,7 +213,9 @@ def artist_saver(inputlist, outputfile):
         for line in inputlist[1]:
             f.write(','.join(line)+'\n')
 
+
 if __name__ == '__main__':
     song_list = np.loadtxt('../data/100_artists/song_list_reduced.csv', dtype=str, delimiter=',')
+    download_list = download_checker('../data/100_artists/mp3s/', song_list)
 
-    beatport_downloader(song_list[:7968], '../data/100_artists/mp3s/')
+    # beatport_downloader(download_list, '../data/100_artists/mp3s2/')
