@@ -1,15 +1,16 @@
 import numpy as np
+import glob
 import os
+import shutil
 import librosa
 # import matplotlib.pyplot as plt
 from tempfile import TemporaryFile
 
-def shuffler(X, y):
-    shuffler = np.array(range(len(X)))
-    np.random.shuffle(shuffler)
-    X_shuffled = X[shuffler]
-    y_shuffled = y[shuffler]
-    return X_shuffled, y_shuffled
+
+
+#########################################
+############  Librosa scripts ###########
+#########################################
 
 def plotter(X):
     fig = plt.figure()
@@ -38,6 +39,31 @@ def mfcc_map(X):
     plt.tight_layout()
     plt.show()
 
+
+#########################################
+#############  File handlers ############
+#########################################
+
+def move_done(path_input, path_output, file_extension='*'):
+    '''
+    Checks which of the files in the input directory are also in the output
+    directory. Files from the input directory that also exist in the output
+    directory are boing moved to a new directory path_input/done/.
+    '''
+    input_dirs = glob.glob(path_input+'*.'+file_extension)
+    output_dirs = glob.glob(path_output+'*.'+file_extension)
+
+    input_files = [i.split('/')[-1] for i in input_dirs]
+    output_files = [i.split('/')[-1] for i in output_dirs]
+
+    done_files = [i for i in input_files if i in output_files]
+    done_dirs = [path_input+'done/'+i for i in done_files]
+
+    if not os.path.exists(path_input+'done/'):
+        os.makedirs(path_input+'done/')
+    for filename in done_files:
+        shutil.move(path_input+filename, path_input+'done/'+filename)
+
 def csv_exporter(raw_audio_data, path, songdirs):
     if not os.path.exists('./raw_data/'):
         os.makedirs('./raw_data/')
@@ -53,3 +79,10 @@ def pickle_exporter(raw_audio_data, path, songdirs):
         os.makedirs(path+'output/')
     for i, song in enumerate(raw_audio_data):
         np.save(path+'output/'+songdirs[i].split('/')[-1][:-4], np.array(song), allow_pickle=True)
+
+def shuffler(X, y):
+    shuffler = np.array(range(len(X)))
+    np.random.shuffle(shuffler)
+    X_shuffled = X[shuffler]
+    y_shuffled = y[shuffler]
+    return X_shuffled, y_shuffled
