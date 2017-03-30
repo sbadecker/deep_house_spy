@@ -122,7 +122,7 @@ def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
             print 'Time elapsed', time()-start_time
         n += 1
 
-def beatporturl_artist_scraper(beatport_url, inputlist, min_songs=None):
+def beatport_url_artist_scraper(beatport_url, inputlist, min_songs=None):
     '''
     INPUT: list with the following form: [int, set()]
     OUTPUT: none
@@ -154,11 +154,11 @@ def beatporturl_artist_scraper(beatport_url, inputlist, min_songs=None):
 def beatport_downloader(song_list, directory='./'):
     if not os.path.exists(directory):
         os.makedirs(directory)
-    for artist_class, artist_name, artist_id, song_name, song_id in song:
+    for artist_class, artist_name, artist_id, song_name, song_id in song_list:
         song_url = 'http://geo-samples.beatport.com/lofi/{}.LOFI.mp3'.format(song_id)
         song_file = urllib2.urlopen(song_url)
         song_file_name = artist_class+'_'+artist_name+'_'+artist_id+'_'+song_name+'_'+song_id+'.mp3'
-        with open(directory+song+song_file_name, 'wb') as f:
+        with open(directory+song_file_name, 'wb') as f:
             f.write(song_file.read())
 
 def batch_downloader_old(artist_list):
@@ -177,7 +177,6 @@ def batch_downloader_old(artist_list):
 #########################################
 ############### CSV saver ###############
 #########################################
-
 def artist_saver(inputlist, outputfile):
     '''
     INPUT: list, outputfile
@@ -190,9 +189,6 @@ def artist_saver(inputlist, outputfile):
             f.write(','.join(line)+'\n')
 
 if __name__ == '__main__':
-    artists = np.loadtxt('../data/100_artists/artists.csv', dtype=str, delimiter=',')
-    song_list, artist_index = tracklist_creator(artists)
-    #
-    # for song in artists:
-    #     tracks = track_id_scraper(artist)
-    #     beatport_downloader(tracks, './'+artist.split('/')[0]+'/')
+    song_list = np.loadtxt('./song_list.csv', dtype=str, delimiter=',')
+
+    beatport_downloader(song_list, '../data/100_artists/mp3s/')
