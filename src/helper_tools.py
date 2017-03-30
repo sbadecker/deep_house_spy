@@ -47,3 +47,9 @@ def csv_exporter(raw_audio_data, path, songdirs):
     with open('./meta_info/'+path.split('/')[-2]+'-metainfo'+'.csv','w') as f:
         for songdir in songdirs:
             f.write(songdir+'\n')
+
+def pickle_exporter(raw_audio_data, path, songdirs):
+    if not os.path.exists(path+'output/'):
+        os.makedirs(path+'output/')
+    for i, song in enumerate(raw_audio_data):
+        np.save(path+'output/'+songdirs[i].split('/')[-1][:-4], np.array(song), allow_pickle=True)
