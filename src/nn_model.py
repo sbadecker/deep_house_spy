@@ -1,6 +1,6 @@
 import numpy as np
 # import tensorflow as tf
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import train_test_split, StratifiedKFold, StratifiedShuffleSplit
 from sklearn.ensemble import RandomForestClassifier
 from full_model import main_engine_parallel, csv_batch_extractor
 from helper_tools import shuffler
@@ -151,7 +151,7 @@ def top_n_accuracy(model, X_test, y_test, n_artists, start=None, end=None):
     return result
 
 #########################################
-############# Helper tools ##############
+######### Train test splitter ###########
 #########################################
 
 def train_test_snippets(X, y, untouched=True):
@@ -171,6 +171,25 @@ def train_test_snippets(X, y, untouched=True):
     else:
         return X_train, X_test, y_train, y_test
 
+def stratified_split(X, y, untouched=True):
+    sss = StratifiedShuffleSplit(n_splits=2, test_size=0.25)
+    for train_index, test_index in sss.split(X, y[:,1]):
+        X_train_songs = X[train_index]
+        X_test_songs = X[test_index]
+        y_train_songs = y[train_index]
+        y_test_songs = y[test_index]
+    X_test_untouched = X_test_songs
+    y_test_untouched = y_test_songs
+    X_train = reduce(lambda x, y: np.concatenate((x,y)), X_train_songs)
+    X_test = reduce(lambda x, y: np.concatenate((x,y)), X_test_songs)
+    y_train = reduce(lambda x, y: np.concatenate((x,y)), y_train_songs)
+    y_test = reduce(lambda x, y: np.concatenate((x,y)), y_test_songs)
+    if untouched:
+        return X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched
+    else:
+        return X_train, X_test, y_train, y_test
+
+
 if __name__ == '__main__':
     #########################################
     ############# Loading data ##############
@@ -183,15 +202,15 @@ if __name__ == '__main__':
 
     X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
     y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
-
-
-    X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = train_test_snippets(X, y)
-
-    X_train = X_train.reshape(X_train.shape[0], 1, 20, 44)
-    X_test = X_test.reshape(X_test.shape[0], 1, 20, 44)
-
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
+    #
+    #
+    X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = stratified_split(X, y)
+    #
+    # X_train = X_train.reshape(X_train.shape[0], 1, 20, 44)
+    # X_test = X_test.reshape(X_test.shape[0], 1, 20, 44)
+    #
+    # X_train = X_train.astype('float32')
+    # X_test = X_test.astype('float32')
 
 
     #########################################
@@ -199,10 +218,10 @@ if __name__ == '__main__':
     #########################################
 
 
-    model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 10)
-    general_accuray = model.evaluate(X_test, y_test_n)[-1]
-    print 'General accuracy: ', general_accuray
-    result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
-    print 'Ensemble accuracy: ', np.mean(result)
-    result_middle = ensemble_accuracy(model, X_test_untouched, y_test_untouched, start=60, end=65)
-    print 'Middle 5s ensemble accuracy: ', np.mean(result_middle)
+    # model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 10)
+    # general_accuray = model.evaluate(X_test, y_test_n)[-1]
+    # print 'General accuracy: ', general_accuray
+    # result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
+    # print 'Ensemble accuracy: ', np.mean(result)
+    # result_middle = ensemble_accuracy(model, X_test_untouched, y_test_untouched, start=60, end=65)
+    # print 'Middle 5s ensemble accuracy: ', np.mean(result_middle)
