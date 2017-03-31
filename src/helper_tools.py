@@ -7,7 +7,6 @@ import librosa
 from tempfile import TemporaryFile
 
 
-
 #########################################
 ############  Librosa scripts ###########
 #########################################
@@ -63,6 +62,19 @@ def move_done(path_input, path_output, file_extension='*'):
         os.makedirs(path_input+'done/')
     for filename in done_files:
         shutil.move(path_input+filename, path_input+'done/'+filename)
+
+def copy_songs(path_songs, path_output, max_artist, file_extension='*'):
+    '''
+    Moves song for all artists up to max_artist.
+    '''
+    if not os.path.exists(path_output):
+        os.makedirs(path_output)
+    song_dirs = glob.glob(path_songs+'*.'+file_extension)
+    for song in song_dirs:
+        songname = song.split('/')[-1]
+        artist = int(songname.split('_')[0])
+        if artist <= max_artist:
+             shutil.copy2(song, path_output)
 
 def csv_exporter(raw_audio_data, path, songdirs):
     if not os.path.exists('./raw_data/'):
