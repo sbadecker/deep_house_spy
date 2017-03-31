@@ -130,6 +130,7 @@ def top_n_predict(model, song, n_artists, reshape=True):
     top_n_artists = (proba_classes*-1).argsort()[:n_artists]
     return top_n_artists
 
+
 #########################################
 ############ Analysis tools #############
 #########################################
@@ -162,10 +163,10 @@ def train_test_snippets(X, y, untouched=True):
     X_train_songs, X_test_songs, y_train_songs, y_test_songs = train_test_split(X, y)
     X_test_untouched = X_test_songs
     y_test_untouched = y_test_songs
-    X_train = reduce(lambda x, y: np.concatenate((x,y)), X_train_songs)
-    X_test = reduce(lambda x, y: np.concatenate((x,y)), X_test_songs)
-    y_train = reduce(lambda x, y: np.concatenate((x,y)), y_train_songs)
-    y_test = reduce(lambda x, y: np.concatenate((x,y)), y_test_songs)
+    X_train = np.concatenate(X_train_songs)
+    X_test = np.concatenate(X_test_songs)
+    y_train = np.concatenate(y_train_songs)
+    y_test = np.concatenate(y_test_songs)
     if untouched:
         return X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched
     else:
@@ -181,10 +182,10 @@ def stratified_split(X, y, untouched=True):
     print 'Splitting done.'
     X_test_untouched = X_test_songs
     y_test_untouched = y_test_songs
-    X_train = reduce(lambda x, y: np.concatenate((x,y)), X_train_songs)
-    X_test = reduce(lambda x, y: np.concatenate((x,y)), X_test_songs)
-    y_train = reduce(lambda x, y: np.concatenate((x,y)), y_train_songs)
-    y_test = reduce(lambda x, y: np.concatenate((x,y)), y_test_songs)
+    X_train = np.concatenate(X_train_songs)
+    X_test = np.concatenate(X_test_songs)
+    y_train = np.concatenate(y_train_songs)
+    y_test = np.concatenate(y_test_songs)
     if untouched:
         return X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched
     else:
@@ -200,10 +201,6 @@ if __name__ == '__main__':
 
     X, y = song_combiner('../data/100_artists/features_extracted/')
     print 'Songs combined.'
-
-    for i in range(100):
-        if sum(y[:,1]==i)< 40:
-            print sum(y[:,1]==i)
 
     X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = stratified_split(X, y)
     print 'Train test split done.'
@@ -235,3 +232,12 @@ if __name__ == '__main__':
     print 'Ensemble accuracy: ', np.mean(result)
     result_middle = ensemble_accuracy(model, X_test_untouched, y_test_untouched, start=60, end=65)
     print 'Middle 5s ensemble accuracy: ', np.mean(result_middle)
+
+    model.save('../models/100_artists_cnn2.h5')
+
+    model.save_weights('../models/100_artists_cnn2_weights.h5')
+
+    model_json = model.to_json()
+
+    with open('../models/100_artists_cnn2.h5.json', 'w') as f:
+        f.write(model_json)
