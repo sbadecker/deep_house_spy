@@ -178,6 +178,7 @@ def stratified_split(X, y, untouched=True):
         X_test_songs = X[test_index]
         y_train_songs = y[train_index]
         y_test_songs = y[test_index]
+    print 'Splitting done.'
     X_test_untouched = X_test_songs
     y_test_untouched = y_test_songs
     X_train = reduce(lambda x, y: np.concatenate((x,y)), X_train_songs)
@@ -199,6 +200,10 @@ if __name__ == '__main__':
 
     X, y = song_combiner('../data/100_artists/features_extracted/')
     print 'Songs combined.'
+
+    for i in range(100):
+        if sum(y[:,1]==i)< 40:
+            print sum(y[:,1]==i)
 
     X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = stratified_split(X, y)
     print 'Train test split done.'
