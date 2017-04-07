@@ -1,1 +1,3 @@
-# deep_house_spy
+I love to listen to deep house dj sets on Soundcloud or Youtube. The problem is, that very there is no tracklist and Shazam doesn’t work with most of the newer deep house songs so it is almost impossible to figure out what the track is called that I am listening to right now. My goal was to identify the artist of the song to make further research possible.
+
+I built a convolutional neural network using an EC2 GPU instance. I had to learn a lot about audio engineering (e.g. Fourier Transform, MFCC), neural networks, computer vision as well as TensorFlow and Keras. While classification of a few artists works really well, it is very hard when the number increases above 20. To overcome this, I used a n most likely prediction.
