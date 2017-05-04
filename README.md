@@ -62,7 +62,3 @@ Unsurprisingly the accuracy droppes when the number of artists increases. As oft
 
 ## Next steps
 One major issue is to decide who to assign a song to. Songs usually have main artists but when they are remixed they also have remix artists. Other songs have multiple main artists and/ or multiple remix artists. Right now assigning these songs happened random: Beatport lists all songs associated to an artist under his song list. If the song has multiple artists (either as main oder remixers) it will appear also on the list of those other artists. My script will first scrape the song for every of those artists and then clean it to keep only one copy of it. One way to tackle this would be to treat this problem as a multi-label problem i.e. assigning all possible artists to a song.
-=======
-I love to listen to deep house dj sets on Soundcloud or Youtube. The problem is, that very there is no tracklist and Shazam doesn’t work with most of the newer deep house songs so it is almost impossible to figure out what the track is called that I am listening to right now. My goal was to identify the artist of the song to make further research possible.
-
-I built a convolutional neural network using an EC2 GPU instance. I had to learn a lot about audio engineering (e.g. Fourier Transform, MFCC), neural networks, computer vision as well as TensorFlow and Keras. While classification of a few artists works really well, it is very hard when the number increases above 20. To overcome this, I used a n most likely prediction.
