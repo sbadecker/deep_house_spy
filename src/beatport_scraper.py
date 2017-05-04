@@ -215,7 +215,7 @@ def artist_saver(inputlist, outputfile):
 
 
 if __name__ == '__main__':
-    song_list = np.loadtxt('../data/100_artists/song_list_reduced.csv', dtype=str, delimiter=',')
+    song_list = np.loadtxt('../data/100_artists/_old/song_list_cleaned.csv', dtype=str, delimiter=',')
     download_list = download_checker('../data/100_artists/mp3s/', song_list)
 
     beatport_downloader(download_list, '../data/100_artists/mp3s2/')
