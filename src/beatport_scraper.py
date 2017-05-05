@@ -53,6 +53,7 @@ def track_data_scraper(artist_class, artist_name, artist_id):
     return song_data
 
 def track_id_scraper_old(artist_id):
+    '''Deprecated'''
     n = 1
     song_ids = []
     classes = [0,0]
@@ -69,7 +70,8 @@ def track_id_scraper_old(artist_id):
 
 def track_checker(artist_name, artist_id):
     '''
-    Takes in the artist id and returns the number of songs that this artist has on beatport.
+    Takes in the artist id and returns the number of songs that this artist has
+    on beatport.
     '''
     n_tracks = 0
     tracks_on_page = 1
@@ -85,6 +87,9 @@ def track_checker(artist_name, artist_id):
     return n_tracks
 
 def list_cleaner(song_list):
+    '''
+    Takes in a list of songnames, removes duplicates and returns a cleaned list.
+    '''
     song_list_cleaned = []
     for song in song_list:
         if song[-2] not in [row[-2] for row in song_list_cleaned]:
@@ -92,12 +97,15 @@ def list_cleaner(song_list):
     return song_list_cleaned
 
 def list_reducer(song_list, max_per_class, max_class):
+    '''
+    Reduces the number of songs per artist (class) to the maximum number defined
+    by max_per_class and returns a new, reduced list of songs.
+    '''
     song_list = np.array(song_list)
     np.random.shuffle(song_list)
     song_list_reduced = song_list[1:2]
     for i in range(max_class):
         reduced_chunk = song_list[song_list[:,0]==str(i)][:max_per_class]
-        # import pdb; pdb.set_trace()
         song_list_reduced = np.append(song_list_reduced, reduced_chunk, axis=0)
     return song_list_reduced[1:]
 
@@ -110,6 +118,7 @@ def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
     '''
     INPUT: list with the following form: [int, set()]
     OUTPUT: none
+
     The int on index 0 of the list will be filled with the number of the latest
     page that has been scraped. The set will be updated with the artists. If the
     process is stopped, it can be resumed at a later point in time.
@@ -135,15 +144,13 @@ def artist_scraper(inputlist, startpage=1, min_songs=None, max_artists=10000):
             if len(inputlist[1]) == max_artists:
                 return None
         inputlist[0] = n
-        if n % 2 == 0:
-            print n
-            print 'Time elapsed', time()-start_time
         n += 1
 
 def beatport_url_artist_scraper(beatport_url, inputlist, min_songs=None):
     '''
     INPUT: list with the following form: [int, set()]
     OUTPUT: none
+
     The int on index 0 of the list will be filled with the number of the latest
     page that has been scraped. The set will be updated with the artists. If the
     process is stopped, it can be resumed at a later point in time.
@@ -165,11 +172,16 @@ def beatport_url_artist_scraper(beatport_url, inputlist, min_songs=None):
         else:
             inputlist[1].add((artist_name, artist_id))
 
+
 #########################################
 ############## Downloader ###############
 #########################################
 
 def beatport_downloader(song_list, directory='./'):
+    '''
+    Takes in a list of songs from the tracklist_creator and downloads all those
+    songs to the specified directory.
+    '''
     if not os.path.exists(directory):
         os.makedirs(directory)
     for artist_class, artist_name, artist_id, song_name, song_id in song_list:
@@ -183,6 +195,7 @@ def batch_downloader_old(artist_list):
     '''
     INPUT: list
     OUT: None
+
     Takes in a list of artiest names and ids, and
     1. Scrapes all of their songs with the track_id_scraper
     2. Downloads all their songs with the beatport_downloader
@@ -191,22 +204,29 @@ def batch_downloader_old(artist_list):
         tracks = track_id_scraper(artist[0]+'/'+artist[1])
         beatport_downloader(tracks, './'+artist[0]+'/')
 
+
+#########################################
+############# Helper tools ##############
+#########################################
+
 def download_checker(path, song_list):
+    '''
+    Checks which of the songs in the song_list are already in the path directory
+    and returns a new list of songs that are not there yet (i.e. have not been
+    downloaded yet).
+    '''
     downloaded = glob.glob(path+'*.mp3')
     downloaded = [i.split('/')[-1] for i in downloaded]
     downloaded = [i[:-4].split('_') for i in downloaded]
     download_list = [list(line) for line in song_list if list(line) not in downloaded]
     return download_list
 
-#########################################
-############### CSV saver ###############
-#########################################
-
 def artist_saver(inputlist, outputfile):
     '''
     INPUT: list, outputfile
     OUTPUT: none
-    Takes the list of the artist_scraper and saves it as a csv file
+
+    Takes the list of the artist_scraper and saves it as a csv file.
     '''
     with open(outputfile, 'wb') as f:
         f.write(str(inputlist[0])+'\n')
@@ -215,7 +235,4 @@ def artist_saver(inputlist, outputfile):
 
 
 if __name__ == '__main__':
-    song_list = np.loadtxt('../data/100_artists/_old/song_list_cleaned.csv', dtype=str, delimiter=',')
-    download_list = download_checker('../data/100_artists/mp3s/', song_list)
-
-    beatport_downloader(download_list, '../data/100_artists/mp3s2/')
+    pass

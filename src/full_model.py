@@ -21,6 +21,7 @@ def main_engine(path, second_snippets=1, song_limit=None, artist_limit=None, n_m
     '''
     INPUT: Directory of Artist directories with pickles in them
     OUTPUT: X, y, song_ids
+
     Loads in all songs from artists in the specified path, and handles the
     splitting, feature extraction and snippet selection process.
     '''
@@ -63,6 +64,9 @@ def main_engine(path, second_snippets=1, song_limit=None, artist_limit=None, n_m
 #########################################
 
 def main_engine_parallel(path, second_snippets=1, song_limit=None, artist_limit=None, n_mfcc=8, pool_size=8, full_mfccs=False, force_full_song=False):
+    '''
+    Same functionality as main_engine but can use multiple cores.
+    '''
     start = time()
     X = []
     y = []
@@ -89,11 +93,9 @@ def main_engine_parallel(path, second_snippets=1, song_limit=None, artist_limit=
     print 'Total runtime: ', time()-start
     return X, y
 
-
 def parallel_child(song, i, n_mfcc, frames=22050, full_mfccs=False, force_full_song=False):
     X_song = []
     y_song = []
-    # song_ids_song = []
     total_splits = song.shape[0]/frames
     splits = [n*frames for n in range(1, 120)]
     snippets = np.split(song, splits)
@@ -102,11 +104,8 @@ def parallel_child(song, i, n_mfcc, frames=22050, full_mfccs=False, force_full_s
     for snippet in snippets:
         snippet_features_raw = snippet_feature_extractor(snippet, n_mfcc=n_mfcc, full_mfccs=full_mfccs)
         X_song.append(snippet_features_raw)
-        # y_song.append(i)
-        # song_ids_song.append(songdirs[j])
     X_song = snippet_selector(X_song)
     y_song = np.ones(len(X_song)) * i
-    # song_ids.append(song_ids_song[:len(X_song)])
     return np.array(X_song), y_song
 
 
@@ -118,23 +117,20 @@ def snippet_feature_extractor(snippet, n_mfcc=20, sample_rate=22050, full_mfccs=
     '''
     INPUT: array (snippets)
     OUTPUT: array (features)
-    Extracts features from an array of snippets
+
+    Extracts features from an array of snippets.
     '''
     if full_mfccs:
         mfcc = librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc)
-        # mel = librosa.feature.melspectrogram(y=snippet, n_fft=2048, hop_length=1024)
     else:
         mfcc = np.mean(librosa.feature.mfcc(y=snippet, sr=sample_rate, n_mfcc=n_mfcc).T,axis=0)
     return mfcc
 
 def snippet_selector(snippet_features_raw):
     '''
-    INPUT:
-    OUTPUT:
+    Is meant to intelligently select snippets that are representative for a song.
+    For now just returns the input.
     '''
-    # model = KMeans(n_clusters=50)
-    # model.fit(snippet_features_raw)
-    # return model.cluster_centers_
     return snippet_features_raw
 
 
@@ -153,21 +149,7 @@ def snippet_cv(path_full, path_single, frames=22050, song_limit=50, artist_limit
         model.fit(X_train, y_train)
         result.append(model.score(X_single[test], y_single[test]))
     return result
-
+    
 
 if __name__ == '__main__':
-    # X,  y, songs = main_engine('../data/pickles/5s_wo/', splits=20, song_limit=1, artist_limit=1)
-
-    X, y = main_engine_parallel('../data/pickles/full_songs/', second_snippets=1, song_limit=100, artist_limit=2, n_mfcc=20, full_mfccs=True)
-
-    ### pickling
-    # np.save('../data/pickles/X_2a_100s_20mfccs', X, allow_pickle=True)
-    # np.save('../data/pickles/y_2a_100s_20mfccs', y, allow_pickle=True)
-
-    # X, y, z = main_engine('../data/pickles/full_songs/', splits=120, song_limit=20, artist_limit=2, n_mfcc=8)
-
-    # result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=100, artist_limit=2, n_mfcc=20)
-    # print 'Middle 5s on 120 snippets:',np.mean(result)
-
-    # result = snippet_cv('../data/pickles/full_songs/', '../data/pickles/5s_wo/', splits=120, song_limit=None, artist_limit=None, n_mfcc=8)
-    #
+    pass

@@ -1,12 +1,10 @@
 import numpy as np
-from helper_tools import shuffler, heatmap, csv_exporter
 import pandas as pd
 import glob
 import os
 import librosa
-# import librosa.display
+from helper_tools import shuffler, heatmap, csv_exporter
 from time import time
-# import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
@@ -25,6 +23,7 @@ def file_loader(path, format='mp3', duration=5, offset=0.0, song_limit=None, csv
     '''
     INPUT: Path (str), duration (in s)
     OUTPUT: List of raw audio data (array), sampling rate (int)
+
     Takes in the path to audio files (mp3) and loads them as floating time series.
     When csv_export is enabled it calls the csv_exporter which stores the
     audio and meta data as pickle and csv files.
@@ -57,7 +56,7 @@ def parallel_file_loader(path, format='mp3', duration=None, offset=0.0, song_lim
     pool.close()
     pool.join()
     sr = X[0][1]
-    print "Audio transformation done", time()-start
+    print 'Audio transformation done', time()-start
     for song in X:
         raw_audio_data.append(song[0])
     if csv_export:
@@ -77,21 +76,11 @@ def feature_extractor(raw_audio_data, n_mfcc=20, sample_rate=22050, full_mfccs=F
     start = time()
     feature_list = []
     for song in raw_audio_data:
-        # stft = np.abs(librosa.stft(song))
         if full_mfccs:
             mfcc = librosa.feature.mfcc(y=song, sr=sample_rate, n_mfcc=n_mfcc)
         else:
             mfcc = np.mean(librosa.feature.mfcc(y=song, sr=sample_rate, n_mfcc=n_mfcc).T,axis=0)
-        # bpm = librosa.beat.tempo(song)
-        # chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
-        # mel = np.mean(librosa.feature.melspectrogram(song, sr=sample_rate).T,axis=0)
-        # contrast = np.mean(librosa.feature.spectral_contrast(S=song, sr=sample_rate).T,axis=0)
-        # contrast = np.mean(librosa.feature.spectral_contrast(song, sr=sample_rate),axis=1)
-        # tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(song), sr=sample_rate).T,axis=0)
-        # features = reduce(lambda x, y: np.append(x, y, axis=0), [mfcc, chroma, mel, contrast, tonnetz])
-        # features = reduce(lambda x, y: np.append(x, y, axis=0), [mfcc, bpm])
         feature_list.append(mfcc)
-    # print 'Feature extraction for one artist done', time()-start
     return np.array(feature_list)
 
 
@@ -127,7 +116,6 @@ def csv_batch_extractor(path, duration=5, song_limit=None, artist_limit=None, n_
     for i, raw_file in enumerate(raw_artistfiles):
         start = time()
         raw_audio_data = np.load(raw_file)
-        # print 'Data loading for artist number %i done' %i, time()-start
         features = feature_extractor(raw_audio_data[:song_limit], n_mfcc=n_mfcc, full_mfccs=full_mfccs)
         feature_list.append(features)
         labels.append(np.ones(len(features))*i)
@@ -164,8 +152,12 @@ def multi_cv(X, y, model= OneVsRestClassifier(RandomForestClassifier(random_stat
 
 def prediction_analyser(model, X, y, songids):
     '''
-    INPUT: model, 2d array, 1d array, list of lists
-    OUTPUT: song_ids with correct predictions and false predictions
+    INPUT: model, 2d arr, 1d arr, list of lists
+    OUTPUT: arr, arr, arr, arr
+
+    Splits the input data into train, and test, trains the given model and then
+    runs the test set on it. It then splits the song id and the test data into
+    cases that the model got wrong and cases that the model got right.
     '''
     X_train, X_test, y_train, y_test, song_train, song_test = train_test_split(X, y, songids)
     classifier = model()
@@ -185,7 +177,8 @@ def prediction_analyser(model, X, y, songids):
 def batch_artist_loader(path):
     '''
     INPUT: path (str)
-    OUTPUT: Pickle (raw audio data) and csv files (songdirs)
+    OUTPUT: Pickle (raw audio data), csv files (songdirs)
+
     Loads the data for all artistfolders in the path into raw audio data arrays
     and exports them as pickle files.
     '''
@@ -193,34 +186,5 @@ def batch_artist_loader(path):
         file_loader(artist, duration=None, song_limit=None, csv_export=True)
 
 
-
 if __name__ == '__main__':
-    X_m, y_m, song_ids_m = batch_extractor('../data/songs/', song_limit=100, artist_limit=2, format='mp3')
-    X_m, y_m = shuffler(X_m,y_m)
-
-
-    # X, y, song_ids = csv_batch_extractor('../data/pickles/full_songs/', song_limit=100, artist_limit=2, n_mfcc=20)
-    # X, y = shuffler(X,y)
-
-
-    # for artist in glob.glob('../data/songs/*/'):
-    #     start = time()
-    #     raw_audio_data = parallel_file_loader(artist, format='mp3', duration=5, offset=0.0, song_limit=None, csv_export=True, pool_size=7)
-    #     print '{} done in {}s'.format(artist,time()-start)
-
-
-    # result = multi_cv(X, y)
-    # print np.mean(result)
-
-
-    rndmf_classifier = RandomForestClassifier()
-    print "Random forrest score: ", cross_val_score(rndmf_classifier, X, y, cv=5).mean()
-
-    # knn_classifier = KNeighborsClassifier()
-    # print "KNN score: ", cross_val_score(knn_classifier, X, y, cv=5).mean()
-
-    # svc_classifier = SVC()
-    # print "SVC score: ", cross_val_score(svc_classifier, X, y, cv=5).mean()
-
-    # logr_classifier = LogisticRegression()
-    # print cross_val_score(logr_classifier, X, y, cv=5).mean()
+    pass
