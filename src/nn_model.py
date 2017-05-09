@@ -56,8 +56,8 @@ def cnn_model_2(X_train, X_test, y_train, y_test, n_classes):
 
     model = Sequential()
 
-    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
-    model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first", input_shape=(1, 22, 46)))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first", input_shape=(1, 20, 44)))
+    model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first"))
     model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
     model.add(Conv2D(32, (3, 3), data_format="channels_first", activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), data_format="channels_first"))
@@ -102,8 +102,8 @@ def cnn_model_2_full(X, y, n_classes):
 
     model = Sequential()
 
-    model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
-    model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first", input_shape=(1, 22, 46)))
+    model.add(ZeroPadding2D(padding=2, data_format="channels_first", input_shape=(1, 20, 44)))
+    model.add(Conv2D(32, (3, 3), activation='relu', data_format="channels_first"))
     model.add(ZeroPadding2D(padding=2, data_format="channels_first"))
     model.add(Conv2D(32, (3, 3), data_format="channels_first", activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2), data_format="channels_first"))
@@ -235,174 +235,30 @@ def stratified_split(X, y, untouched=True):
     else:
         return X_train, X_test, y_train, y_test
 
+#########################################
+############## Data loader ##############
+#########################################
 
-if __name__ == '__main__':
-    #########################################
-    ############# Loading data ##############
-    #########################################
-    # X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
-    # y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
-
-
-
-    # X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = stratified_split(X, y)
-    # print 'Train test split done.'
-
-    # np.save('../data/100_artists/X_train', X_train, allow_pickle=True)
-    # np.save('../data/100_artists/X_test', X_test, allow_pickle=True)
-    # np.save('../data/100_artists/y_train', y_train, allow_pickle=True)
-    # np.save('../data/100_artists/y_test', y_test, allow_pickle=True)
-    # np.save('../data/100_artists/X_test_untouched', X_test_untouched, allow_pickle=True)
-    # np.save('../data/100_artists/y_test_untouched', y_test_untouched, allow_pickle=True)
-    # print 'Pickling done.'
-
-    # X_train = X_train.reshape(X_train.shape[0], 1, 20, 44)
-    # X_test = X_test.reshape(X_test.shape[0], 1, 20, 44)
-    #
-    # X_train = X_train.astype('float32')
-    # X_test = X_test.astype('float32')
-
-
-
-    #########################################
-    ############# Building CNN ##############
-    #########################################
-
-    # print 'Building model.'
-    #
-    # model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 10)
-    # general_accuray = model.evaluate(X_test, y_test_n)[-1]
-    # print 'General accuracy: ', general_accuray
-    # result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
-    # print 'Ensemble accuracy: ', np.mean(result)
-    # result_middle = ensemble_accuracy(model, X_test_untouched, y_test_untouched, start=60, end=65)
-    # print 'Middle 5s ensemble accuracy: ', np.mean(result_middle)
-    # result_top3 = top_n_accuracy(model, X_test_untouched, y_test_untouched, 3)
-    # print 'Top 3 accuracy: ', np.mean(result_top3)
-    # result_top5 = top_n_accuracy(model, X_test_untouched, y_test_untouched, 5)
-    # print 'Top 5 accuracy: ', np.mean(result_top5)
-    # result_top10 = top_n_accuracy(model, X_test_untouched, y_test_untouched, 10)
-    # print 'Top 10 accuracy: ', np.mean(result_top10)
-    #
-    #
-    #
-    # model.save('../models/10_artists_cnn2.h5')
-    #
-    # model.save_weights('../models/10_artists_cnn2_weights.h5')
-    #
-    # model_json = model.to_json()
-    # with open('../models/10_artists_cnn2.h5.json', 'w') as f:
-    #     f.write(model_json)
-
-    #########################################
-    ############# Building full CNN ##############
-    #########################################
-
-    X, y = song_combiner('../data/100_artists/features_extracted/')
-    print 'Songs combined.'
+def full_data_loader(xy_directory):
+    X, y = song_combiner(xy_directory)
 
     X = np.concatenate(X)
     y = np.concatenate(y)
 
     X = X.reshape(X.shape[0], 1, 20, 44)
     X = X.astype('float32')
+    return X, y
 
-    print 'Building model.'
-
-    model, y = cnn_model_2_full(X, y, 100)
-
-    model.save('../models/100_artists_cnn2_full.h5')
-
-    model.save_weights('../models/100_artists_cnn2_full_weights.h5')
-
-    model_json = model.to_json()
-    with open('../models/100_artists_cnn2_full.json', 'w') as f:
-        f.write(model_json)
-
-#############
-
-    X, y = song_combiner('../data/50_artists/features_extracted/')
-    print 'Songs combined.'
-
-    X = np.concatenate(X)
-    y = np.concatenate(y)
-
-    X = X.reshape(X.shape[0], 1, 20, 44)
-    X = X.astype('float32')
-
-    print 'Building model.'
-
-    model, y = cnn_model_2_full(X, y, 50)
-
-    model.save('../models/50_artists_cnn2_full.h5')
-
-    model.save_weights('../models/50_artists_cnn2_full_weights.h5')
-
-    model_json = model.to_json()
-    with open('../models/50_artists_cnn2_full.json', 'w') as f:
-        f.write(model_json)
-
-#############
-
-    X, y = song_combiner('../data/20_artists/features_extracted/')
-    print 'Songs combined.'
-
-    X = np.concatenate(X)
-    y = np.concatenate(y)
-
-    X = X.reshape(X.shape[0], 1, 20, 44)
-    X = X.astype('float32')
-
-    print 'Building model.'
-
-    model, y = cnn_model_2_full(X, y, 50)
-
-    model.save('../models/20_artists_cnn2_full.h5')
-
-    model.save_weights('../models/20_artists_cnn2_full_weights.h5')
-
-    model_json = model.to_json()
-    with open('../models/20_artists_cnn2_full.json', 'w') as f:
-        f.write(model_json)
-
-#############
-
-    X, y = song_combiner('../data/20_artists/features_extracted/')
-    print 'Songs combined.'
-
-    X = np.concatenate(X)
-    y = np.concatenate(y)
-
-    X = X.reshape(X.shape[0], 1, 20, 44)
-    X = X.astype('float32')
-
-    print 'Building model.'
-
-    model, y = cnn_model_2_full(X, y, 50)
-
-    model.save('../models/20_artists_cnn2_full.h5')
-
-    model.save_weights('../models/20_artists_cnn2_full_weights.h5')
-
-    model_json = model.to_json()
-    with open('../models/20_artists_cnn2_full.json', 'w') as f:
-        f.write(model_json)
-
-#############
-    X, y = song_combiner('../data/20_artists/features_extracted/')
+def train_test_data_loader(X_filename, y_filename):
+    X = np.load('../data/pickles/incl_features/X_10a_alls_20mfccs.npy')
+    y = np.load('../data/pickles/incl_features/y_10a_alls_20mfccs.npy')
 
     X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched = stratified_split(X, y)
 
-    model, y_train_n, y_test_n = cnn_model_2(X_train, X_test, y_train, y_test, 20)
-    general_accuray = model.evaluate(X_test, y_test_n)[-1]
-    print 'General accuracy: ', general_accuray
-    result = ensemble_accuracy(model, X_test_untouched, y_test_untouched)
-    print 'Ensemble accuracy: ', np.mean(result)
-    result_middle = ensemble_accuracy(model, X_test_untouched, y_test_untouched, start=60, end=65)
-    print 'Middle 5s ensemble accuracy: ', np.mean(result_middle)
-    result_top3 = top_n_accuracy(model, X_test_untouched, y_test_untouched, 3)
-    print 'Top 3 accuracy: ', np.mean(result_top3)
-    result_top5 = top_n_accuracy(model, X_test_untouched, y_test_untouched, 5)
-    print 'Top 5 accuracy: ', np.mean(result_top5)
-    result_top10 = top_n_accuracy(model, X_test_untouched, y_test_untouched, 10)
-    print 'Top 10 accuracy: ', np.mean(result_top10)
+    X_train = X_train.reshape(X_train.shape[0], 1, 20, 44)
+    X_test = X_test.reshape(X_test.shape[0], 1, 20, 44)
+
+    X_train = X_train.astype('float32')
+    X_test = X_test.astype('float32')
+
+    return X_train, X_test, y_train, y_test, X_test_untouched, y_test_untouched
