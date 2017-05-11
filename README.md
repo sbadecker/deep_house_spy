@@ -26,7 +26,7 @@ Instead of using the full MFCCs (44x20 for 1 second) I averaged them which left 
 While this clearly showed that there is signal it was also obvious that I had to use a more complex model in order to do useful classifications of a higher number of artists.
 
 ## Convolutional Neural Network
-For my convolutional neural network I used structure used by Yoonchang Han and Kyogu Lee in their [paper on acustic scene classification](https://arxiv.org/pdf/1607.02383.pdf) as basis and amended it slightly to work with my data. (zero padding layers are not shown here):
+For my convolutional neural network I used structure used by Yoonchang Han and Kyogu Lee in their [paper on acustic scene classification](https://arxiv.org/pdf/1607.02383.pdf) as basis and amended it slightly to work with my data (zero padding layers are not shown here).
 
 Input layer, 1x44x20  
 Convolution #1, 32@3x3  
